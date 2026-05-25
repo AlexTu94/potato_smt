@@ -7,12 +7,13 @@ use work.pp_types.all;
 --! Arbiter needed to manage properly the execution of the ROBs. The managing is needed for the limited ALU's resources
 entity arbiter is
     generic(
-		NUM_INSTRUCTIONS_MAIN   : natural := 8, --! Number of instructions holded in the table
+		NUM_INSTRUCTIONS_MAIN   : natural := 8; --! Number of instructions holded in the table
 		NUM_INSTRUCTIONS_THREAD : natural := 8 --! Number of instructions holded in the table
 	);
 	port(
         clk                : in std_logic;
         rst                : in std_logic;
+        stall              : in std_logic;
 
         execution_num_0    : in integer range 0 to NUM_INSTRUCTIONS_MAIN; 
         execution_alu_op_0 : in alu_operation;       
@@ -67,35 +68,40 @@ begin
 	end process priority_proc;
 
 	-- Arbitration logic
-	arbitrate: process(execution_num_0, execution_alu_op_0, execution_num_1, execution_alu_op_1, priority_toggle)
+	arbitrate: process(execution_num_0, execution_alu_op_0, execution_num_1, execution_alu_op_1, priority_toggle, stall)
 		variable fu_0, fu_1 : functional_unit;
 	begin
-		fu_0 := get_fu(execution_alu_op_0);
-		fu_1 := get_fu(execution_alu_op_1);
+		if stall = '1' then
+			selector_op_0 <= 'Z';
+			selector_op_1 <= 'Z';
+		else
+			fu_0 := get_fu(execution_alu_op_0);
+			fu_1 := get_fu(execution_alu_op_1);
 
-		-- Default: assume no wait
-		selector_op_0 <= '0';
-		selector_op_1 <= '0';
+			-- Default: assume no wait
+			selector_op_0 <= '0';
+			selector_op_1 <= '0';
 
-		-- 1. Check for NOPs (NOPs always get selector_op = '1')
-		if execution_num_0 = NUM_INSTRUCTIONS_MAIN then
-			selector_op_0 <= '1';
-		end if;
+			-- 1. Check for NOPs (NOPs always get selector_op = '1')
+			if execution_num_0 = NUM_INSTRUCTIONS_MAIN then
+				selector_op_0 <= '1';
+			end if;
 
-		if execution_num_1 = NUM_INSTRUCTIONS_THREAD then
-			selector_op_1 <= '1';
-		end if;
+			if execution_num_1 = NUM_INSTRUCTIONS_THREAD then
+				selector_op_1 <= '1';
+			end if;
 
-		-- 2. Conflict handling (only if both are NOT NOPs)
-		if (execution_num_0 /= NUM_INSTRUCTIONS_MAIN and execution_num_1 /= NUM_INSTRUCTIONS_THREAD) then
-			if (fu_0 = fu_1 and fu_0 /= FU_NONE) then
-				-- Resource conflict detected
-				if priority_toggle = '0' then
-					-- Thread 0 has priority
-					selector_op_1 <= '1'; -- Thread 1 must wait
-				else
-					-- Thread 1 has priority
-					selector_op_0 <= '1'; -- Thread 0 must wait
+			-- 2. Conflict handling (only if both are NOT NOPs)
+			if (execution_num_0 /= NUM_INSTRUCTIONS_MAIN and execution_num_1 /= NUM_INSTRUCTIONS_THREAD) then
+				if (fu_0 = fu_1 and fu_0 /= FU_NONE) then
+					-- Resource conflict detected
+					if priority_toggle = '0' then
+						-- Thread 0 has priority
+						selector_op_1 <= '1'; -- Thread 1 must wait
+					else
+						-- Thread 1 has priority
+						selector_op_0 <= '1'; -- Thread 0 must wait
+					end if;
 				end if;
 			end if;
 		end if;

@@ -12,7 +12,8 @@ use work.pp_utilities.all;
 
 entity pp_execute is
 	generic (
-		LENGTH_MAIN : positive := 8
+		LENGTH_MAIN   : positive := 8;
+		LENGTH_THREAD : positive := 8
 	); 
 	port(
 		clk    : in std_logic;
@@ -30,136 +31,126 @@ entity pp_execute is
 		dmem_data_size : out std_logic_vector( 1 downto 0);
 		dmem_read_req  : out std_logic;
 		dmem_write_req : out std_logic;
-		prev_dmem_address   : out std_logic_vector(31 downto 0);
 
-		-- Register addresses Thread 0:
+		-- Thread 0 inputs:
 		rs1_addr_in_0, rs2_addr_in_0, rd_addr_in_0 : in  register_address;
-		rd_addr_out_0                          : out register_address;
-
-		-- Register addresses Thread 1:
-		rs1_addr_in_1, rs2_addr_in_1, rd_addr_in_1 : in  register_address;
-		rd_addr_out_1                          : out register_address;
-
-		-- Register values Thread 0:
 		rs1_data_in_0, rs2_data_in_0 : in std_logic_vector(31 downto 0);
-		rd_data_out_0              : out std_logic_vector(31 downto 0);
-
-		-- Register values Thread 1:
-		rs1_data_in_1, rs2_data_in_1 : in std_logic_vector(31 downto 0);
-		rd_data_out_1              : out std_logic_vector(31 downto 0);
-
-		-- Constant values Thread 0:
-		shamt_in_0     : in std_logic_vector(4 downto 0);
-		immediate_in_0 : in std_logic_vector(31 downto 0);
-
-		-- Constant values Thread 1:
-		shamt_in_1     : in std_logic_vector(4 downto 0);
-		immediate_in_1 : in std_logic_vector(31 downto 0);
-
-		-- Instruction address Thread 0:
-		pc_in_0     : in  std_logic_vector(31 downto 0);
-		pc_out_0    : out std_logic_vector(31 downto 0);
-
-		-- Instruction address Thread 1:
-		pc_in_1     : in  std_logic_vector(31 downto 0);
-		pc_out_1    : out std_logic_vector(31 downto 0);
-
-		-- Funct3 value from the instruction, used to choose which comparison
-		-- is used when branching:
-		funct3_in_0 : in std_logic_vector(2 downto 0);
-		funct3_in_1 : in std_logic_vector(2 downto 0);
-
-		-- CSR signals:
-		csr_addr_in          : in  csr_address;
-		csr_addr_out         : out csr_address;
-		csr_write_in         : in  csr_write_mode;
-		csr_write_out        : out csr_write_mode;
-		csr_value_in         : in  std_logic_vector(31 downto 0);
-		csr_value_out        : out std_logic_vector(31 downto 0);
-		csr_use_immediate_in : in  std_logic; 
-
-		-- Control signals Thread 0:
+		shamt_in_0     	: in std_logic_vector(4 downto 0);
+		immediate_in_0 	: in std_logic_vector(31 downto 0);
+		pc_in_0     	: in  std_logic_vector(31 downto 0);
+		funct3_in_0 	: in std_logic_vector(2 downto 0);
+		-- Thread 0 control signals:
 		alu_op_in_0    	: in  alu_operation;
 		alu_x_src_in_0 	: in  alu_operand_source;
 		alu_y_src_in_0 	: in  alu_operand_source;
 		rd_write_in_0  	: in  std_logic;
-		rd_write_out_0 	: out std_logic;
 		branch_in_0    	: in  branch_type;
-		branch_out_0   	: out branch_type;
-		rob_op_num_in_0   : in  integer;
-		exe_op_num_out_0  : out integer;
+		rob_op_num_in_0 : in  integer;
+		count_instruction_in_0  : in  std_logic;
+		count_instruction_csr_in_0  : in  std_logic;
 
-		-- Control signals Thread 1:
+
+		-- CSR signals Thread 0:
+		csr_addr_in_0          : in  csr_address;
+		csr_write_in_0         : in  csr_write_mode;
+		csr_value_in_0         : in  std_logic_vector(31 downto 0);
+		csr_use_immediate_in_0 : in  std_logic; 
+
+
+		-- Thread 1 inputs:
+		rs1_addr_in_1, rs2_addr_in_1, rd_addr_in_1 : in  register_address;
+		rs1_data_in_1, rs2_data_in_1 : in std_logic_vector(31 downto 0);
+		shamt_in_1     	: in std_logic_vector(4 downto 0);
+		immediate_in_1 	: in std_logic_vector(31 downto 0);
+		pc_in_1     	: in  std_logic_vector(31 downto 0);
+		funct3_in_1 	: in std_logic_vector(2 downto 0);
+		-- Thread 1 control signals:
 		alu_op_in_1    	: in  alu_operation;
 		alu_x_src_in_1 	: in  alu_operand_source;
 		alu_y_src_in_1 	: in  alu_operand_source;
 		rd_write_in_1  	: in  std_logic;
-		rd_write_out_1 	: out std_logic;
 		branch_in_1    	: in  branch_type;
+		rob_op_num_in_1 : in  integer;
+		count_instruction_in_1  : in  std_logic;
+		count_instruction_csr_in_1  : in  std_logic;
+
+
+		-- CSR signals Thread 1:
+		csr_addr_in_1          : in  csr_address;
+		csr_write_in_1         : in  csr_write_mode;
+		csr_value_in_1         : in  std_logic_vector(31 downto 0);
+		csr_use_immediate_in_1 : in  std_logic; 
+
+		-- Thread 0 outputs:
+		rd_addr_out_0 	: out register_address;
+		rd_data_out_0   : out std_logic_vector(31 downto 0);
+		pc_out_0    	: out std_logic_vector(31 downto 0);
+		-- Thread 0 control signals outputs:
+		rd_write_out_0 	: out std_logic;
+		branch_out_0   	: out branch_type;
+		exe_op_num_out_0  : out integer;
+		count_instruction_out_0 : out std_logic;
+		count_instruction_csr_out_0 : out std_logic;
+		jump_out_0        : out std_logic;
+		jump_target_out_0 : out std_logic_vector(31 downto 0);
+
+		-- Thread 1 outputs:
+		rd_addr_out_1   : out register_address;
+		rd_data_out_1   : out std_logic_vector(31 downto 0);
+		pc_out_1    	: out std_logic_vector(31 downto 0);
+		-- Thread 1 control signals outputs:
+		rd_write_out_1 	: out std_logic;
 		branch_out_1   	: out branch_type;
-		rob_op_num_in_1   : in  integer;
 		exe_op_num_out_1  : out integer;
+		count_instruction_out_1 : out std_logic;
+		count_instruction_csr_out_1 : out std_logic;
+		jump_out_1        : out std_logic;
+		jump_target_out_1 : out std_logic_vector(31 downto 0);
+
+		-- CSR signal output
+		csr_addr_out  : out csr_address;
+		csr_write_out : out csr_write_mode;
+		csr_value_out : out std_logic_vector(31 downto 0);
 
 		-- Memory control signals:
-		mem_op_in    : in  memory_operation_type;
-		mem_op_out   : out memory_operation_type;
-		mem_size_in  : in  memory_operation_size;
-		mem_size_out : out memory_operation_size;
-
-		-- Whether the instruction should be counted Thread 0:
-		count_instruction_in_0  : in  std_logic;
-		count_instruction_out_0 : out std_logic;
-		count_instruction_csr_in_0  : in  std_logic;
-		count_instruction_csr_out_0 : out std_logic;
-
-		-- Whether the instruction should be counted Thread 1:
-		count_instruction_in_1  : in  std_logic;
-		count_instruction_out_1 : out std_logic;
-		count_instruction_csr_in_1  : in  std_logic;
-		count_instruction_csr_out_1 : out std_logic;
+		mem_op_in     : in  memory_operation_type;
+		mem_op_out    : out memory_operation_type;
+		mem_size_in   : in  memory_operation_size;
+		mem_size_out  : out memory_operation_size;
 
 		-- Exception control registers:
 		ie_in, ie1_in : in  std_logic;
 		mie_in        : in  std_logic_vector(31 downto 0);
 		mtvec_in      : in  std_logic_vector(31 downto 0);
-		mtvec_out     : out std_logic_vector(31 downto 0);
-		--mepc_in       : in  std_logic_vector(31 downto 0);
+		mtvec_out	  : out std_logic_vector(31 downto 0);
 
-		-- Exception signals:
-		decode_exception_in       : in std_logic;
-		decode_exception_cause_in : in csr_exception_cause;
+		-- Exception signals Thread 0:
+		decode_exception_in_0       : in std_logic;
+		decode_exception_cause_in_0 : in csr_exception_cause;
+		exception_out_0         	: out std_logic;
+		exception_context_out_0 	: out csr_exception_context;
 
-		-- Exception outputs:
-		exception_out         : out std_logic;
-		exception_context_out : out csr_exception_context;
+		-- Exception signals Thread 1:
+		decode_exception_in_1       : in std_logic;
+		decode_exception_cause_in_1 : in csr_exception_cause;
+		exception_out_1         	: out std_logic;
+		exception_context_out_1 	: out csr_exception_context;
 
-		-- Control outputs Thread 0:
-		jump_out_0        : out std_logic;
-		jump_target_out_0 : out std_logic_vector(31 downto 0);
-
-		-- Control outputs Thread 1:
-		jump_out_1        : out std_logic;
-		jump_target_out_1 : out std_logic_vector(31 downto 0);
-
+		-- Forwarding signals for csr operations:
 		-- Inputs to the forwarding logic from the MEM stage:
-		mem_rd_write         : in std_logic;
-		mem_rd_addr          : in register_address;
-		mem_rd_value         : in std_logic_vector(31 downto 0);
-		mem_csr_addr         : in csr_address;
-		mem_csr_data		 : in std_logic_vector(31 downto 0);
-		mem_csr_write        : in csr_write_mode;
-		mem_exception        : in std_logic;
-		mem_count_instr_csr	 : in std_logic;
-		mem_mem_op      	 : in  memory_operation_type; 
+		mem_rd_addr         : in register_address;
+		mem_rd_value        : in std_logic_vector(31 downto 0);
+		mem_csr_addr        : in csr_address;
+		mem_csr_data		: in std_logic_vector(31 downto 0);
+		mem_csr_write       : in csr_write_mode;
+		mem_count_instr_csr	: in std_logic;
 		-- Inputs to the forwarding logic from the WB stage:
-		wb_rd_write          : in std_logic;
-		wb_rd_addr           : in register_address;
-		wb_rd_value          : in std_logic_vector(31 downto 0);
-		wb_csr_addr          : in csr_address;
-		wb_csr_data			 : in std_logic_vector(31 downto 0);
-		wb_csr_write         : in csr_write_mode;
-		wb_exception         : in std_logic;
-		wb_count_instr_csr	 : in std_logic
+		wb_rd_addr          : in register_address;
+		wb_rd_value         : in std_logic_vector(31 downto 0);
+		wb_csr_addr         : in csr_address;
+		wb_csr_data			: in std_logic_vector(31 downto 0);
+		wb_csr_write        : in csr_write_mode;
+		wb_count_instr_csr	: in std_logic
 	);
 end entity pp_execute;
 
@@ -197,20 +188,27 @@ architecture behaviour of pp_execute is
 
 	signal mie, mtvec : std_logic_vector(31 downto 0);
 
-	signal csr_write : csr_write_mode;
-	signal csr_addr  : csr_address;
-	signal csr_use_immediate : std_logic;
+	signal csr_write_0, csr_write_1 : csr_write_mode;
+	signal csr_addr_0, csr_addr_1  : csr_address;
+	signal csr_use_immediate_0, csr_use_immediate_1 : std_logic;
 
-	signal csr_value : std_logic_vector(31 downto 0);
+	signal csr_value_0, csr_value_1 : std_logic_vector(31 downto 0);
+	signal csr_value_alu : std_logic_vector(31 downto 0);
+	signal csr_rs1_alu   : std_logic_vector(31 downto 0);
+	signal csr_imm_alu   : register_address;
+	signal csr_use_imm_alu : std_logic;
+	signal csr_write_alu : csr_write_mode;
+	signal csr_result_alu : std_logic_vector(31 downto 0);
 	
-	signal decode_exception : std_logic;
-	signal decode_exception_cause : csr_exception_cause;
+	signal decode_exception_0, decode_exception_1 : std_logic;
+	signal decode_exception_cause_0, decode_exception_cause_1 : csr_exception_cause;
 
-	signal exception_taken : std_logic;
-	signal exception_cause : csr_exception_cause;
-	signal exception_addr  : std_logic_vector(31 downto 0);
+	signal exception_taken_0, exception_taken_1 : std_logic;
+	signal exception_cause_0, exception_cause_1 : csr_exception_cause;
+	signal exception_addr_0, exception_addr_1  : std_logic_vector(31 downto 0);
 
-	signal data_misaligned, instr_misaligned : std_logic;
+	signal data_misaligned_0, data_misaligned_1 : std_logic;
+	signal instr_misaligned_0, instr_misaligned_1 : std_logic;
 
 	signal irq_asserted : std_logic;
 	signal irq_asserted_num : std_logic_vector(3 downto 0);
@@ -228,8 +226,9 @@ begin
 	mem_op_out <= mem_op;
 	mem_size_out <= mem_size;
 
-	csr_write_out <= csr_write;
-	csr_addr_out  <= csr_addr;
+	csr_write_out <= csr_write_0 when csr_write_0 /= CSR_WRITE_NONE else csr_write_1 when csr_write_1 /= CSR_WRITE_NONE;
+	csr_addr_out  <= csr_addr_0	 when csr_write_0 /= CSR_WRITE_NONE else csr_addr_1  when csr_write_1 /= CSR_WRITE_NONE;
+	csr_value_out <= csr_result_alu; 
 
 	rs2_forwarded_0 <= rs2_data_0;
 	rs2_forwarded_1 <= rs2_data_1;
@@ -237,12 +236,19 @@ begin
 	pc_out_0 <= pc_0;
 	pc_out_1 <= pc_1;
 	
-	exception_out <= exception_taken;
-	exception_context_out <= (
+	exception_out_0 <= exception_taken_0;
+	exception_context_out_0 <= (
 				ie => ie_in,
 				ie1 => ie1_in,
-				cause => exception_cause,
-				badaddr => exception_addr);
+				cause => exception_cause_0,
+				badaddr => exception_addr_0);
+
+	exception_out_1 <= exception_taken_1;
+	exception_context_out_1 <= (
+				ie => ie_in,
+				ie1 => ie1_in,
+				cause => exception_cause_1,
+				badaddr => exception_addr_1);
 
 	do_jump_0 <= (to_std_logic(branch_0 = BRANCH_JUMP or branch_0 = BRANCH_JUMP_INDIRECT)
 		or (to_std_logic(branch_0 = BRANCH_CONDITIONAL) and branch_condition_0)
@@ -251,12 +257,15 @@ begin
 	jump_target_out_0 <= jump_target_0;
 
 	do_jump_1 <= (to_std_logic(branch_1 = BRANCH_JUMP or branch_1 = BRANCH_JUMP_INDIRECT)
-		or (to_std_logic(branch_1 = BRANCH_CONDITIONAL) and branch_condition_1)) and not stall;
+		or (to_std_logic(branch_1 = BRANCH_CONDITIONAL) and branch_condition_1)
+		or to_std_logic(branch_1 = BRANCH_SRET)) and not stall;
 	jump_out_1 <= do_jump_1;
 	jump_target_out_1 <= jump_target_1;
 
 	mtvec_out <= std_logic_vector(unsigned(mtvec));
-	exception_taken <= not stall and (decode_exception or to_std_logic(exception_cause /= CSR_CAUSE_NONE)); 
+
+	exception_taken_0 <= not stall and (decode_exception_0 or to_std_logic(exception_cause_0 /= CSR_CAUSE_NONE)); 
+	exception_taken_1 <= not stall and (decode_exception_1 or to_std_logic(exception_cause_1 /= CSR_CAUSE_NONE)); 
 
 	irq_asserted <= to_std_logic(ie_in = '1' and (irq and mie(31 downto 24)) /= x"00");
 
@@ -266,11 +275,11 @@ begin
 	rs1_data_1 <= rs1_data_1 when stall = '1' or prev_stall = '1' else rs1_data_in_1;
 	rs2_data_1 <= rs2_data_1 when stall = '1' or prev_stall = '1' else rs2_data_in_1;
 
-	dmem_address <= prev_alu_result when (mem_op /= MEMOP_TYPE_NONE and mem_op /= MEMOP_TYPE_INVALID) and exception_taken = '0'
+	dmem_address <= prev_alu_result when (mem_op /= MEMOP_TYPE_NONE and mem_op /= MEMOP_TYPE_INVALID) and (exception_taken_0 = '0' and exception_taken_1 = '0')
 		else (others => '0');
 	dmem_data_out <= rs2_forwarded_0;
-	dmem_write_req <= '1' when mem_op = MEMOP_TYPE_STORE and exception_taken = '0' else '0';
-	dmem_read_req <= '1' when memop_is_load(mem_op) and exception_taken = '0' else '0';
+	dmem_write_req <= '1' when mem_op = MEMOP_TYPE_STORE and (exception_taken_0 = '0' and exception_taken_1 = '0') else '0';
+	dmem_read_req <= '1' when memop_is_load(mem_op) and (exception_taken_0 = '0' and exception_taken_1 = '0') else '0';
 	prev_alu_result <= alu_result_0 when ((stall = '0' and prev_stall = '0') or (stall='1' and prev_stall='0')) else prev_alu_result;
 
 		process(clk) 
@@ -292,17 +301,20 @@ begin
 				rd_write_out_1 <= '0';
 				branch_0 <= BRANCH_NONE;
 				branch_1 <= BRANCH_NONE;
-				csr_write <= CSR_WRITE_NONE;
+				csr_write_0 <= CSR_WRITE_NONE;
+				csr_write_1 <= CSR_WRITE_NONE;
 				mem_op <= MEMOP_TYPE_NONE;
-				decode_exception <= '0';
+				decode_exception_0 <= '0';
+				decode_exception_1 <= '0';
 				count_instruction_out_0 <= '0';
 				count_instruction_csr_out_0 <= '0';
 				count_instruction_out_1 <= '0';
 				count_instruction_csr_out_1 <= '0';
 				exe_op_num_out_0 <= LENGTH_MAIN; 
-				exe_op_num_out_1 <= LENGTH_MAIN; 
+				exe_op_num_out_1 <= LENGTH_THREAD; 
 			elsif stall = '1' then
-				csr_write <= CSR_WRITE_NONE;
+				csr_write_0 <= CSR_WRITE_NONE;
+				csr_write_1 <= CSR_WRITE_NONE;
 			elsif stall = '0' then
 				pc_0 <= pc_in_0;
 				pc_1 <= pc_in_1;
@@ -351,18 +363,25 @@ begin
 				shamt_1 <= shamt_in_1;
 				funct3_1 <= funct3_in_1;
 
-				-- CSR signals:
-				csr_write <= csr_write_in;
-				csr_addr <= csr_addr_in;
-				csr_use_immediate <= csr_use_immediate_in;
+				-- CSR signals Thread 0:
+				csr_write_0 <= csr_write_in_0;
+				csr_addr_0 <= csr_addr_in_0;
+				csr_use_immediate_0 <= csr_use_immediate_in_0;
+
+				-- CSR signals Thread 1:
+				csr_write_1 <= csr_write_in_1;
+				csr_addr_1 <= csr_addr_in_1;
+				csr_use_immediate_1 <= csr_use_immediate_in_1;
 
 				-- Exception vector base:
 				mtvec <= mtvec_in;
 				mie <= mie_in;
 
 				-- Instruction decoder exceptions:
-				decode_exception <= decode_exception_in;
-				decode_exception_cause <= decode_exception_cause_in;
+				decode_exception_0 <= decode_exception_in_0;
+				decode_exception_cause_0 <= decode_exception_cause_in_0;
+				decode_exception_1 <= decode_exception_in_1;
+				decode_exception_cause_1 <= decode_exception_cause_in_1;
 			end if;
 		end if;
 	end process pipeline_register;
@@ -394,72 +413,126 @@ begin
 		irq_asserted_num <= temp;
 	end process get_irq_num;
 
-	data_misalign_check: process(mem_size, alu_result_0)
+	-- THIS PART SHOULD BE ADAPTED WHEN MEM OPERATIONS IMPLEMENTED
+	data_misalign_check: process(mem_size, alu_result_0, alu_result_1)
 	begin
+		-- Thread 0
 		case mem_size is
 			when MEMOP_SIZE_HALFWORD =>
 				if alu_result_0(0) /= '0' then
-					data_misaligned <= '1';
+					data_misaligned_0 <= '1';
 				else
-					data_misaligned <= '0';
+					data_misaligned_0 <= '0';
 				end if;
 			when MEMOP_SIZE_WORD =>
 				if alu_result_0(1 downto 0) /= b"00" then
-					data_misaligned <= '1';
+					data_misaligned_0 <= '1';
 				else
-					data_misaligned <= '0';
+					data_misaligned_0 <= '0';
 				end if;
 			when others =>
-				data_misaligned <= '0';
+				data_misaligned_0 <= '0';
+		end case;
+		-- Thread 1
+		case mem_size is
+			when MEMOP_SIZE_HALFWORD =>
+				if alu_result_1(0) /= '0' then
+					data_misaligned_1 <= '1';
+				else
+					data_misaligned_1 <= '0';
+				end if;
+			when MEMOP_SIZE_WORD =>
+				if alu_result_1(1 downto 0) /= b"00" then
+					data_misaligned_1 <= '1';
+				else
+					data_misaligned_1 <= '0';
+				end if;
+			when others =>
+				data_misaligned_1 <= '0';
 		end case;
 	end process data_misalign_check;
 
-	instr_misalign_check: process(jump_target_0, branch_0, branch_condition_0, do_jump_0)
+	instr_misalign_check: process(jump_target_0, branch_0, branch_condition_0, do_jump_0,
+                                  jump_target_1, branch_1, branch_condition_1, do_jump_1)
 	begin
 		if jump_target_0(1 downto 0) /= b"00" and do_jump_0 = '1' then
-			instr_misaligned <= '1';
+			instr_misaligned_0 <= '1';
 		else
-			instr_misaligned <= '0';
+			instr_misaligned_0 <= '0';
+		end if;
+		if jump_target_1(1 downto 0) /= b"00" and do_jump_1 = '1' then
+			instr_misaligned_1 <= '1';
+		else
+			instr_misaligned_1 <= '0';
 		end if;
 	end process instr_misalign_check;
 
-	find_exception_cause: process(decode_exception, decode_exception_cause, mem_op,
-		data_misaligned, instr_misaligned, irq_asserted, irq_asserted_num, mie,
+	find_exception_cause_0: process(decode_exception_0, decode_exception_cause_0, mem_op,
+		data_misaligned_0, instr_misaligned_0, irq_asserted, irq_asserted_num, mie,
 		software_interrupt, timer_interrupt, ie_in)
 	begin
 		if irq_asserted = '1' then
-			exception_cause <= std_logic_vector(unsigned(CSR_CAUSE_IRQ_BASE) + unsigned(irq_asserted_num));
+			exception_cause_0 <= std_logic_vector(unsigned(CSR_CAUSE_IRQ_BASE) + unsigned(irq_asserted_num));
 		elsif software_interrupt = '1' and mie(CSR_MIE_MSIE) = '1' and ie_in = '1' then
-			exception_cause <= CSR_CAUSE_SOFTWARE_INT;
+			exception_cause_0 <= CSR_CAUSE_SOFTWARE_INT;
 		elsif timer_interrupt = '1' and mie(CSR_MIE_MTIE) = '1' and ie_in = '1' then
-			exception_cause <= CSR_CAUSE_TIMER_INT;
-		elsif decode_exception = '1' then
-			exception_cause <= decode_exception_cause;
+			exception_cause_0 <= CSR_CAUSE_TIMER_INT;
+		elsif decode_exception_0 = '1' then
+			exception_cause_0 <= decode_exception_cause_0;
 		elsif mem_op = MEMOP_TYPE_INVALID then
-			exception_cause <= CSR_CAUSE_INVALID_INSTR;
-		elsif instr_misaligned = '1' then
-			exception_cause <= CSR_CAUSE_INSTR_MISALIGN;
-		elsif data_misaligned = '1' and mem_op = MEMOP_TYPE_STORE then
-			exception_cause <= CSR_CAUSE_STORE_MISALIGN;
-		elsif data_misaligned = '1' and memop_is_load(mem_op) then
-			exception_cause <= CSR_CAUSE_LOAD_MISALIGN;
+			exception_cause_0 <= CSR_CAUSE_INVALID_INSTR;
+		elsif instr_misaligned_0 = '1' then
+			exception_cause_0 <= CSR_CAUSE_INSTR_MISALIGN;
+		elsif data_misaligned_0 = '1' and mem_op = MEMOP_TYPE_STORE then
+			exception_cause_0 <= CSR_CAUSE_STORE_MISALIGN;
+		elsif data_misaligned_0 = '1' and memop_is_load(mem_op) then
+			exception_cause_0 <= CSR_CAUSE_LOAD_MISALIGN;
 		else
-			exception_cause <= CSR_CAUSE_NONE;
+			exception_cause_0 <= CSR_CAUSE_NONE;
 		end if;
-	end process find_exception_cause;
+	end process find_exception_cause_0;
 
-	find_exception_addr: process(instr_misaligned, data_misaligned, jump_target_0, alu_result_0)
+	find_exception_cause_1: process(decode_exception_1, decode_exception_cause_1, mem_op, 
+                                    data_misaligned_1, instr_misaligned_1)
 	begin
-		if instr_misaligned = '1' then
-			exception_addr <= jump_target_0;
-		elsif data_misaligned = '1' then
-			exception_addr <= alu_result_0;
+		if decode_exception_1 = '1' then
+			exception_cause_1 <= decode_exception_cause_1;
+		elsif mem_op = MEMOP_TYPE_INVALID then
+			exception_cause_1 <= CSR_CAUSE_INVALID_INSTR;
+		elsif instr_misaligned_1 = '1' then
+			exception_cause_1 <= CSR_CAUSE_INSTR_MISALIGN;
+		elsif data_misaligned_1 = '1' and mem_op = MEMOP_TYPE_STORE then
+			exception_cause_1 <= CSR_CAUSE_STORE_MISALIGN;
+		elsif data_misaligned_1 = '1' and memop_is_load(mem_op) then
+			exception_cause_1 <= CSR_CAUSE_LOAD_MISALIGN;
 		else
-			exception_addr <= (others => '0');
+			exception_cause_1 <= CSR_CAUSE_NONE;
 		end if;
-	end process find_exception_addr;
+	end process find_exception_cause_1;
 
-	calc_jump_tgt_0: process(branch_0, pc_0, rs1_forwarded_0, immediate_0, csr_value)
+	find_exception_addr_0: process(instr_misaligned_0, data_misaligned_0, jump_target_0, alu_result_0)
+	begin
+		if instr_misaligned_0 = '1' then
+			exception_addr_0 <= jump_target_0;
+		elsif data_misaligned_0 = '1' then
+			exception_addr_0 <= alu_result_0;
+		else
+			exception_addr_0 <= (others => '0');
+		end if;
+	end process find_exception_addr_0;
+
+	find_exception_addr_1: process(instr_misaligned_1, data_misaligned_1, jump_target_1, alu_result_1)
+	begin
+		if instr_misaligned_1 = '1' then
+			exception_addr_1 <= jump_target_1;
+		elsif data_misaligned_1 = '1' then
+			exception_addr_1 <= alu_result_1;
+		else
+			exception_addr_1 <= (others => '0');
+		end if;
+	end process find_exception_addr_1;
+
+	calc_jump_tgt_0: process(branch_0, pc_0, rs1_forwarded_0, immediate_0, csr_value_0)
 	begin
 		case branch_0 is
 			when BRANCH_JUMP | BRANCH_CONDITIONAL =>
@@ -467,19 +540,21 @@ begin
 			when BRANCH_JUMP_INDIRECT =>
 				jump_target_0 <= std_logic_vector(unsigned(rs1_forwarded_0) + unsigned(immediate_0));
 			when BRANCH_SRET =>
-				jump_target_0 <= csr_value;
+				jump_target_0 <= csr_value_0;
 			when others =>
 				jump_target_0 <= (others => '0');
 		end case;
 	end process calc_jump_tgt_0;
 
-	calc_jump_tgt_1: process(branch_1, pc_1, rs1_forwarded_1, immediate_1)
+	calc_jump_tgt_1: process(branch_1, pc_1, rs1_forwarded_1, immediate_1, csr_value_1)
 	begin
 		case branch_1 is
 			when BRANCH_JUMP | BRANCH_CONDITIONAL =>
 				jump_target_1 <= std_logic_vector(unsigned(pc_1) + unsigned(immediate_1));
 			when BRANCH_JUMP_INDIRECT =>
 				jump_target_1 <= std_logic_vector(unsigned(rs1_forwarded_1) + unsigned(immediate_1));
+			when BRANCH_SRET =>
+				jump_target_1 <= csr_value_1;
 			when others =>
 				jump_target_1 <= (others => '0');
 		end case;
@@ -492,7 +567,7 @@ begin
 			immediate_value => immediate_0,
 			shamt_value => shamt_0,
 			pc_value => pc_0,
-			csr_value => csr_value,
+			csr_value => csr_value_0,
 			output => alu_x_0
 		);
 
@@ -503,7 +578,7 @@ begin
 			immediate_value => immediate_0,
 			shamt_value => shamt_0,
 			pc_value => pc_0,
-			csr_value => csr_value,
+			csr_value => csr_value_0,
 			output => alu_y_0
 		);
 
@@ -514,7 +589,7 @@ begin
 			immediate_value => immediate_1,
 			shamt_value => shamt_1,
 			pc_value => pc_1,
-			csr_value => x"00000000", -- Thread 1 doesn't use CSR for now
+			csr_value => csr_value_1,
 			output => alu_x_1
 		);
 
@@ -525,74 +600,77 @@ begin
 			immediate_value => immediate_1,
 			shamt_value => shamt_1,
 			pc_value => pc_1,
-			csr_value => x"00000000", -- Thread 1 doesn't use CSR for now
+			csr_value => csr_value_1,
 			output => alu_y_1
 		);
 
-	rs1_csr_forward_0: process(csr_write, rs1_addr_0, rs1_data_0, 
+	rs1_csr_forward_0: process(csr_write_0, rs1_addr_0, rs1_data_0, 
 		mem_csr_write, mem_rd_addr, mem_count_instr_csr, mem_rd_value,
 		wb_csr_write, wb_rd_addr, wb_count_instr_csr, wb_rd_value)
 	begin
-		if csr_write /= CSR_WRITE_NONE and mem_csr_write /= CSR_WRITE_NONE and mem_rd_addr = rs1_addr_0 and mem_count_instr_csr = '1' then --and mem_csr_addr /= b"00000"  then
+		if csr_write_0 /= CSR_WRITE_NONE and mem_csr_write /= CSR_WRITE_NONE and mem_rd_addr = rs1_addr_0 and mem_count_instr_csr = '1' then 
 			rs1_forwarded_0 <= mem_rd_value;
-		elsif csr_write /= CSR_WRITE_NONE and wb_csr_write /= CSR_WRITE_NONE and wb_rd_addr = rs1_addr_0 and wb_count_instr_csr = '1' then --and wb_rd_addr /= b"00000"  then
+		elsif csr_write_0 /= CSR_WRITE_NONE and wb_csr_write /= CSR_WRITE_NONE and wb_rd_addr = rs1_addr_0 and wb_count_instr_csr = '1' then 
 			rs1_forwarded_0 <= wb_rd_value;
 		else
 			rs1_forwarded_0 <= rs1_data_0;
 		end if;
 	end process rs1_csr_forward_0;
 
-	rs1_forwarded_1 <= rs1_data_1; -- Thread 1 CSR forwarding not implemented yet
+	rs1_csr_forward_1: process(csr_write_1, rs1_addr_1, rs1_data_1, 
+		mem_csr_write, mem_rd_addr, mem_count_instr_csr, mem_rd_value,
+		wb_csr_write, wb_rd_addr, wb_count_instr_csr, wb_rd_value)
+	begin
+		if csr_write_1 /= CSR_WRITE_NONE and mem_csr_write /= CSR_WRITE_NONE and mem_rd_addr = rs1_addr_1 and mem_count_instr_csr = '1' then 
+			rs1_forwarded_1 <= mem_rd_value;
+		elsif csr_write_1 /= CSR_WRITE_NONE and wb_csr_write /= CSR_WRITE_NONE and wb_rd_addr = rs1_addr_1 and wb_count_instr_csr = '1' then 
+			rs1_forwarded_1 <= wb_rd_value;
+		else
+			rs1_forwarded_1 <= rs1_data_1;
+		end if;
+	end process rs1_csr_forward_1;
 	
-	csr_value_forward: process(csr_write, csr_addr, csr_value_in, 
+	csr_value_forward_0: process(csr_write_0, csr_addr_0, csr_value_in_0, 
 		mem_csr_write, mem_csr_addr, mem_count_instr_csr, mem_csr_data,
 		wb_csr_write, wb_csr_addr, wb_count_instr_csr, wb_csr_data)
 	begin
-		if csr_write /= CSR_WRITE_NONE and mem_csr_write /= CSR_WRITE_NONE and mem_csr_addr = csr_addr and mem_count_instr_csr = '1' then --and mem_csr_addr /= b"00000"  then
-			csr_value <= mem_csr_data;
-		elsif csr_write /= CSR_WRITE_NONE and wb_csr_write /= CSR_WRITE_NONE and wb_csr_addr = csr_addr and wb_count_instr_csr = '1' then --and wb_rd_addr /= b"00000"  then
-			csr_value <= wb_csr_data;
+		if csr_write_0 /= CSR_WRITE_NONE and mem_csr_write /= CSR_WRITE_NONE and mem_csr_addr = csr_addr_0 and mem_count_instr_csr = '1' then 
+			csr_value_0 <= mem_csr_data;
+		elsif csr_write_0 /= CSR_WRITE_NONE and wb_csr_write /= CSR_WRITE_NONE and wb_csr_addr = csr_addr_0 and wb_count_instr_csr = '1' then 
+			csr_value_0 <= wb_csr_data;
 		else
-			csr_value <= csr_value_in;
+			csr_value_0 <= csr_value_in_0;
 		end if;
-	end process csr_value_forward;
+	end process csr_value_forward_0;
 
-	branch_comparator_0: entity work.pp_comparator
-		port map(
-			funct3 => funct3_0,
-			rs1 => rs1_forwarded_0,
-			rs2 => rs2_forwarded_0,
-			result => branch_condition_0
-		);
+	csr_value_forward_1: process(csr_write_1, csr_addr_1, csr_value_in_1, 
+		mem_csr_write, mem_csr_addr, mem_count_instr_csr, mem_csr_data,
+		wb_csr_write, wb_csr_addr, wb_count_instr_csr, wb_csr_data)
+	begin
+		if csr_write_1 /= CSR_WRITE_NONE and mem_csr_write /= CSR_WRITE_NONE and mem_csr_addr = csr_addr_1 and mem_count_instr_csr = '1' then 
+			csr_value_1 <= mem_csr_data;
+		elsif csr_write_1 /= CSR_WRITE_NONE and wb_csr_write /= CSR_WRITE_NONE and wb_csr_addr = csr_addr_1 and wb_count_instr_csr = '1' then 
+			csr_value_1 <= wb_csr_data;
+		else
+			csr_value_1 <= csr_value_in_1;
+		end if;
+	end process csr_value_forward_1;
 
-	branch_comparator_1: entity work.pp_comparator
-		port map(
-			funct3 => funct3_1,
-			rs1 => rs1_forwarded_1,
-			rs2 => rs2_forwarded_1,
-			result => branch_condition_1
-		);
-
-	alu_instance: entity work.pp_alu
-		port map(
-			x_0 => alu_x_0,
-			y_0 => alu_y_0,
-			operation_0 => alu_op_0,
-			result_0 => alu_result_0,
-			x_1 => alu_x_1,
-			y_1 => alu_y_1,
-			operation_1 => alu_op_1,
-			result_1 => alu_result_1
-		);
+	-- Mux CSR ALU inputs based on which thread is executing a CSR instruction
+	csr_value_alu   <= csr_value_0 			when csr_write_0 /= CSR_WRITE_NONE else csr_value_1			when csr_write_1 /= CSR_WRITE_NONE;
+	csr_rs1_alu     <= rs1_forwarded_0		when csr_write_0 /= CSR_WRITE_NONE else rs1_forwarded_1		when csr_write_1 /= CSR_WRITE_NONE;
+	csr_imm_alu     <= rs1_addr_0 			when csr_write_0 /= CSR_WRITE_NONE else rs1_addr_1  		when csr_write_1 /= CSR_WRITE_NONE;
+	csr_use_imm_alu <= csr_use_immediate_0 	when csr_write_0 /= CSR_WRITE_NONE else csr_use_immediate_1	when csr_write_1 /= CSR_WRITE_NONE;
+	csr_write_alu   <= csr_write_0 			when csr_write_0 /= CSR_WRITE_NONE else csr_write_1			when csr_write_1 /= CSR_WRITE_NONE;
 
 	csr_alu_instance: entity work.pp_csr_alu
 		port map(
-			x => csr_value,	
-			y => rs1_forwarded_0,	
-			result => csr_value_out,	
-			immediate => rs1_addr_0,	
-			use_immediate => csr_use_immediate, 
-			write_mode => csr_write	
+			x => csr_value_alu,	
+			y => csr_rs1_alu,	
+			result => csr_result_alu,	
+			immediate => csr_imm_alu,	
+			use_immediate => csr_use_imm_alu, 
+			write_mode => csr_write_alu	
 		);
 
 

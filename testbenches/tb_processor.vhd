@@ -17,7 +17,8 @@ entity tb_processor is
 		DMEM_SIZE : natural := 4096; --! Size of the data memory in bytes.
 		RESET_ADDRESS   : std_logic_vector := x"00000100"; --! Processor reset address
 		IMEM_START_ADDR : std_logic_vector := x"00000100"; --! Instruction memory start address
-		IMEM_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem_testfile.hex";   --! File containing the contents of instruction memory.
+		IMEM0_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem0_testfile.hex";   --! File containing the contents of instruction memory.
+		IMEM1_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem1_testfile.hex";   --! File containing the contents of instruction memory.
 		DMEM_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/dmem_testfile.hex"    --! File containing the contents of data memory.
 	);
 end entity tb_processor;
@@ -31,11 +32,17 @@ architecture testbench of tb_processor is
 	-- Common inputs:
 	signal reset  : std_logic := '1';
 
-	-- Instruction memory interface:
-	signal imem_address : std_logic_vector(31 downto 0);
-	signal imem_data_in : std_logic_vector(31 downto 0) := (others => '0');
-	signal imem_req     : std_logic;		-- Signal not used, not declared
-	signal imem_ack     : std_logic := '0';	-- Signal not used, fixed at 0
+	-- Instruction memory 0 interface:
+	signal imem_address_0 : std_logic_vector(31 downto 0);
+	signal imem_data_in_0 : std_logic_vector(31 downto 0) := (others => '0');
+	signal imem_req_0     : std_logic;		-- Signal not used, not declared
+	signal imem_ack_0     : std_logic := '0';	-- Signal not used, fixed at 0
+
+	-- Instruction memory 1 interface:
+	signal imem_address_1 : std_logic_vector(31 downto 0);
+	signal imem_data_in_1 : std_logic_vector(31 downto 0) := (others => '0');
+	signal imem_req_1     : std_logic;		-- Signal not used, not declared
+	signal imem_ack_1     : std_logic := '0';	-- Signal not used, fixed at 0
 
 	-- Data memory interface:
 	signal dmem_address   : std_logic_vector(31 downto 0);
@@ -62,7 +69,8 @@ architecture testbench of tb_processor is
 	constant DMEM_END  : natural := IMEM_END + DMEM_SIZE;
 
 	-- Memories:
-	signal imem_memory : memory_array(IMEM_BASE to IMEM_END);
+	signal imem_memory_0 : memory_array(IMEM_BASE to IMEM_END);
+	signal imem_memory_1 : memory_array(IMEM_BASE to IMEM_END);
 	signal dmem_memory : memory_array(DMEM_BASE to DMEM_END);
 
 	signal simulation_finished : boolean := false;
@@ -75,10 +83,14 @@ begin
 		) port map(
 			clk => clk,
 			reset => reset,
-			imem_address => imem_address,
-			imem_data_in => imem_data_in,
-			imem_req => imem_req,
-			imem_ack => imem_ack,
+			imem_address_0 => imem_address_0,
+			imem_data_in_0 => imem_data_in_0,
+			imem_req_0 => imem_req_0,
+			imem_ack_0 => imem_ack_0,
+			imem_address_1 => imem_address_1,
+			imem_data_in_1 => imem_data_in_1,
+			imem_req_1 => imem_req_1,
+			imem_ack_1 => imem_ack_1,
 			dmem_address => dmem_address,
 			dmem_data_in => dmem_data_in,
 			dmem_data_out => dmem_data_out,
@@ -105,25 +117,44 @@ begin
 
 	--! Initializes the instruction memory from file.
 	imem_init: process
-		file imem_file : text open READ_MODE is IMEM_FILENAME;
+		file imem0_file : text open READ_MODE is IMEM0_FILENAME;
+		file imem1_file : text open READ_MODE is IMEM1_FILENAME;
 		variable input_line  : line;
 		variable input_index : natural;
 		variable input_value : std_logic_vector(31 downto 0);
 	begin
+		-- Loading the instructions for Instruction Memory 0
 		for i in to_integer(unsigned(IMEM_START_ADDR)) / 4 to IMEM_END / 4 loop
 		--for i in IMEM_BASE / 4 to IMEM_END / 4 loop
-			if not endfile(imem_file) then
-				readline(imem_file, input_line);
+			if not endfile(imem0_file) then
+				readline(imem0_file, input_line);
 				hread(input_line, input_value);
-				imem_memory(i * 4 + 0) <= input_value( 7 downto  0);
-				imem_memory(i * 4 + 1) <= input_value(15 downto  8);
-				imem_memory(i * 4 + 2) <= input_value(23 downto 16);
-				imem_memory(i * 4 + 3) <= input_value(31 downto 24);
+				imem_memory_0(i * 4 + 0) <= input_value( 7 downto  0);
+				imem_memory_0(i * 4 + 1) <= input_value(15 downto  8);
+				imem_memory_0(i * 4 + 2) <= input_value(23 downto 16);
+				imem_memory_0(i * 4 + 3) <= input_value(31 downto 24);
 			else
-				imem_memory(i * 4 + 0) <= RISCV_NOP( 7 downto 0);
-				imem_memory(i * 4 + 1) <= RISCV_NOP(15 downto 8);
-				imem_memory(i * 4 + 2) <= RISCV_NOP(23 downto 16);
-				imem_memory(i * 4 + 3) <= RISCV_NOP(31 downto 24);
+				imem_memory_0(i * 4 + 0) <= RISCV_NOP( 7 downto 0);
+				imem_memory_0(i * 4 + 1) <= RISCV_NOP(15 downto 8);
+				imem_memory_0(i * 4 + 2) <= RISCV_NOP(23 downto 16);
+				imem_memory_0(i * 4 + 3) <= RISCV_NOP(31 downto 24);
+			end if;
+		end loop;
+		-- Loading the instructions for Instruction Memory 1
+		for i in to_integer(unsigned(IMEM_START_ADDR)) / 4 to IMEM_END / 4 loop
+		--for i in IMEM_BASE / 4 to IMEM_END / 4 loop
+			if not endfile(imem1_file) then
+				readline(imem1_file, input_line);
+				hread(input_line, input_value);
+				imem_memory_1(i * 4 + 0) <= input_value( 7 downto  0);
+				imem_memory_1(i * 4 + 1) <= input_value(15 downto  8);
+				imem_memory_1(i * 4 + 2) <= input_value(23 downto 16);
+				imem_memory_1(i * 4 + 3) <= input_value(31 downto 24);
+			else
+				imem_memory_1(i * 4 + 0) <= RISCV_NOP( 7 downto 0);
+				imem_memory_1(i * 4 + 1) <= RISCV_NOP(15 downto 8);
+				imem_memory_1(i * 4 + 2) <= RISCV_NOP(23 downto 16);
+				imem_memory_1(i * 4 + 3) <= RISCV_NOP(31 downto 24);
 			end if;
 		end loop;
 
@@ -184,26 +215,49 @@ begin
 
 	initialized <= imem_initialized and dmem_initialized;
 
-	--! Instruction memory read process.
-	imem_read: process(clk)
+	--! Instruction memory 0 read process.
+	imem0_read: process(clk)
 	begin
 		if rising_edge(clk) then
 			if reset = '1' then
-				imem_ack <= '0';
+				imem_ack_0 <= '0';
 			else
-				if to_integer(unsigned(imem_address)) > IMEM_END then
-					imem_data_in <= (others => 'X');
+				if to_integer(unsigned(imem_address_0)) > IMEM_END then
+					imem_data_in_0 <= (others => 'X');
 				else
-					imem_data_in <= imem_memory(to_integer(unsigned(imem_address)) + 3)
-						& imem_memory(to_integer(unsigned(imem_address)) + 2)
-						& imem_memory(to_integer(unsigned(imem_address)) + 1)
-						& imem_memory(to_integer(unsigned(imem_address)) + 0);
+					imem_data_in_0 <= imem_memory_0(to_integer(unsigned(imem_address_0)) + 3)
+						& imem_memory_0(to_integer(unsigned(imem_address_0)) + 2)
+						& imem_memory_0(to_integer(unsigned(imem_address_0)) + 1)
+						& imem_memory_0(to_integer(unsigned(imem_address_0)) + 0);
 				end if;
 	
-				imem_ack <= '1';
+				imem_ack_0 <= '1';
 			end if;
 		end if;
-	end process imem_read;
+	end process imem0_read;
+
+	--! Instruction memory 1 read process.
+	imem1_read: process(clk)
+	begin
+		if rising_edge(clk) then
+			if reset = '1' then
+				imem_ack_1 <= '0';
+			else
+				if to_integer(unsigned(imem_address_1)) > IMEM_END then
+					imem_data_in_1 <= (others => 'X');
+				else
+					imem_data_in_1 <= imem_memory_1(to_integer(unsigned(imem_address_1)) + 3)
+						& imem_memory_1(to_integer(unsigned(imem_address_1)) + 2)
+						& imem_memory_1(to_integer(unsigned(imem_address_1)) + 1)
+						& imem_memory_1(to_integer(unsigned(imem_address_1)) + 0);
+				end if;
+	
+				imem_ack_1 <= '1';
+			end if;
+		end if;
+	end process imem1_read;
+
+
 
 	--! Data memory read process.
 	dmem_read: process(clk)

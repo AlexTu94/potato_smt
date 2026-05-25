@@ -47,6 +47,7 @@ SOURCE_FILES := \
     ../src/pp_comparator.vhd \
     ../src/pp_alu.vhd \
     ../src/pp_csr_alu.vhd \
+    ../src/pp_arbiter.vhd \
     ../src/pp_execute.vhd \
     ../src/pp_memory.vhd \
     ../src/pp_writeback.vhd \

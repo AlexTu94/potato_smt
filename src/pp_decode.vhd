@@ -174,7 +174,7 @@ begin
 							prev_pc <= instruction_address;
 							-- Next State evaluation
 							if next_csr_instr = '1' then
-								if rob_table1_empty = '0' then
+								if rob_table_empty = '0' then
 									-- The ROB has to be emptied
 									state <= rob_empty;
 									stall_csr <= '1';
@@ -201,7 +201,7 @@ begin
 						count_instruction <= '0';
 						count_instruction_csr <= '0';
 						-- Next state evaluation
-						if rob_table1_empty = '0' then
+						if rob_table_empty = '0' then
 							-- Continue to wait the ROB
 							state <= rob_empty;
 						else
