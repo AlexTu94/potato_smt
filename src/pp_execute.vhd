@@ -16,10 +16,12 @@ entity pp_execute is
 		LENGTH_THREAD : positive := 8
 	); 
 	port(
-		clk    : in std_logic;
-		reset  : in std_logic;
+		clk     : in std_logic;
+		reset   : in std_logic;
 
-		stall, flush : in std_logic;
+		stall   : in std_logic;
+		flush_0 : in std_logic;
+		flush_1 : in std_logic;
 
 		-- Interrupt inputs:
 		irq : in std_logic_vector(7 downto 0);
@@ -38,24 +40,24 @@ entity pp_execute is
 		shamt_in_0     	: in std_logic_vector(4 downto 0);
 		immediate_in_0 	: in std_logic_vector(31 downto 0);
 		pc_in_0     	: in  std_logic_vector(31 downto 0);
-		funct3_in_0 	: in std_logic_vector(2 downto 0);
 		-- Thread 0 control signals:
+		funct3_in_0 	: in std_logic_vector(2 downto 0);
 		alu_op_in_0    	: in  alu_operation;
 		alu_x_src_in_0 	: in  alu_operand_source;
 		alu_y_src_in_0 	: in  alu_operand_source;
 		rd_write_in_0  	: in  std_logic;
 		branch_in_0    	: in  branch_type;
-		rob_op_num_in_0 : in  integer;
+		op_num_in_0 	: in  integer range 0 to LENGTH_MAIN;
+		mem_op_in_0     : in  memory_operation_type;
+		mem_size_in_0   : in  memory_operation_size;
 		count_instruction_in_0  : in  std_logic;
 		count_instruction_csr_in_0  : in  std_logic;
-
-
+		
 		-- CSR signals Thread 0:
 		csr_addr_in_0          : in  csr_address;
 		csr_write_in_0         : in  csr_write_mode;
 		csr_value_in_0         : in  std_logic_vector(31 downto 0);
 		csr_use_immediate_in_0 : in  std_logic; 
-
 
 		-- Thread 1 inputs:
 		rs1_addr_in_1, rs2_addr_in_1, rd_addr_in_1 : in  register_address;
@@ -63,17 +65,18 @@ entity pp_execute is
 		shamt_in_1     	: in std_logic_vector(4 downto 0);
 		immediate_in_1 	: in std_logic_vector(31 downto 0);
 		pc_in_1     	: in  std_logic_vector(31 downto 0);
-		funct3_in_1 	: in std_logic_vector(2 downto 0);
 		-- Thread 1 control signals:
+		funct3_in_1 	: in std_logic_vector(2 downto 0);
 		alu_op_in_1    	: in  alu_operation;
 		alu_x_src_in_1 	: in  alu_operand_source;
 		alu_y_src_in_1 	: in  alu_operand_source;
 		rd_write_in_1  	: in  std_logic;
 		branch_in_1    	: in  branch_type;
-		rob_op_num_in_1 : in  integer;
+		op_num_in_1 	: in  integer range 0 to LENGTH_THREAD;
+		mem_op_in_1     : in  memory_operation_type;
+		mem_size_in_1   : in  memory_operation_size;
 		count_instruction_in_1  : in  std_logic;
 		count_instruction_csr_in_1  : in  std_logic;
-
 
 		-- CSR signals Thread 1:
 		csr_addr_in_1          : in  csr_address;
@@ -88,11 +91,13 @@ entity pp_execute is
 		-- Thread 0 control signals outputs:
 		rd_write_out_0 	: out std_logic;
 		branch_out_0   	: out branch_type;
-		exe_op_num_out_0  : out integer;
+		op_num_out_0  	: out integer range 0 to LENGTH_MAIN;
 		count_instruction_out_0 : out std_logic;
 		count_instruction_csr_out_0 : out std_logic;
 		jump_out_0        : out std_logic;
 		jump_target_out_0 : out std_logic_vector(31 downto 0);
+		mem_op_out_0    : out memory_operation_type;
+		mem_size_out_0  : out memory_operation_size;
 
 		-- Thread 1 outputs:
 		rd_addr_out_1   : out register_address;
@@ -101,22 +106,18 @@ entity pp_execute is
 		-- Thread 1 control signals outputs:
 		rd_write_out_1 	: out std_logic;
 		branch_out_1   	: out branch_type;
-		exe_op_num_out_1  : out integer;
+		op_num_out_1  : out integer range 0 to LENGTH_THREAD;
 		count_instruction_out_1 : out std_logic;
 		count_instruction_csr_out_1 : out std_logic;
 		jump_out_1        : out std_logic;
 		jump_target_out_1 : out std_logic_vector(31 downto 0);
+		mem_op_out_1    : out memory_operation_type;
+		mem_size_out_1  : out memory_operation_size;
 
-		-- CSR signal output
+		-- CSR signals output
 		csr_addr_out  : out csr_address;
 		csr_write_out : out csr_write_mode;
-		csr_value_out : out std_logic_vector(31 downto 0);
-
-		-- Memory control signals:
-		mem_op_in     : in  memory_operation_type;
-		mem_op_out    : out memory_operation_type;
-		mem_size_in   : in  memory_operation_size;
-		mem_size_out  : out memory_operation_size;
+		csr_value_out : out std_logic_vector(31 downto 0);		
 
 		-- Exception control registers:
 		ie_in, ie1_in : in  std_logic;
@@ -169,8 +170,8 @@ architecture behaviour of pp_execute is
 	signal rs1_addr_1, rs2_addr_1 : register_address;
 	signal rs1_data_1, rs2_data_1 : std_logic_vector(31 downto 0);
 
-	signal mem_op : memory_operation_type;
-	signal mem_size : memory_operation_size;
+	signal mem_op_0, mem_op_1 : memory_operation_type;
+	signal mem_size_0, mem_size_1 : memory_operation_size;
 	signal prev_stall : std_logic;
 
 	signal pc_0, pc_1        : std_logic_vector(31 downto 0);
@@ -213,6 +214,12 @@ architecture behaviour of pp_execute is
 	signal irq_asserted : std_logic;
 	signal irq_asserted_num : std_logic_vector(3 downto 0);
 
+	-- Shared memory signals:
+	signal mem_op_shared   : memory_operation_type;
+	signal mem_size_shared : memory_operation_size;
+	signal alu_result_shared : std_logic_vector(31 downto 0);
+	signal rs2_forwarded_shared : std_logic_vector(31 downto 0);
+
 begin
 
 	-- Register values should not be latched in by a clocked process,
@@ -223,8 +230,10 @@ begin
 	branch_out_0 <= branch_0;
 	branch_out_1 <= branch_1;
 
-	mem_op_out <= mem_op;
-	mem_size_out <= mem_size;
+	mem_op_out_0 <= mem_op_0;
+	mem_size_out_0 <= mem_size_0;
+	mem_op_out_1 <= mem_op_1;
+	mem_size_out_1 <= mem_size_1;
 
 	csr_write_out <= csr_write_0 when csr_write_0 /= CSR_WRITE_NONE else csr_write_1 when csr_write_1 /= CSR_WRITE_NONE;
 	csr_addr_out  <= csr_addr_0	 when csr_write_0 /= CSR_WRITE_NONE else csr_addr_1  when csr_write_1 /= CSR_WRITE_NONE;
@@ -275,62 +284,105 @@ begin
 	rs1_data_1 <= rs1_data_1 when stall = '1' or prev_stall = '1' else rs1_data_in_1;
 	rs2_data_1 <= rs2_data_1 when stall = '1' or prev_stall = '1' else rs2_data_in_1;
 
-	dmem_address <= prev_alu_result when (mem_op /= MEMOP_TYPE_NONE and mem_op /= MEMOP_TYPE_INVALID) and (exception_taken_0 = '0' and exception_taken_1 = '0')
-		else (others => '0');
-	dmem_data_out <= rs2_forwarded_0;
-	dmem_write_req <= '1' when mem_op = MEMOP_TYPE_STORE and (exception_taken_0 = '0' and exception_taken_1 = '0') else '0';
-	dmem_read_req <= '1' when memop_is_load(mem_op) and (exception_taken_0 = '0' and exception_taken_1 = '0') else '0';
-	prev_alu_result <= alu_result_0 when ((stall = '0' and prev_stall = '0') or (stall='1' and prev_stall='0')) else prev_alu_result;
+	mem_op_shared <= mem_op_0 when mem_op_0 /= MEMOP_TYPE_NONE else mem_op_1;
+	mem_size_shared <= mem_size_0 when mem_op_0 /= MEMOP_TYPE_NONE else mem_size_1;
+	alu_result_shared <= alu_result_0 when mem_op_0 /= MEMOP_TYPE_NONE else alu_result_1;
+	rs2_forwarded_shared <= rs2_forwarded_0 when mem_op_0 /= MEMOP_TYPE_NONE else rs2_forwarded_1;
 
-		process(clk) 
-		begin
-			if rising_edge(clk) then
-				if reset = '1' or flush = '1' then
-					prev_stall <= '0';
-				else 
-					prev_stall <= stall;
-				end if;
+	dmem_address <= prev_alu_result when (mem_op_shared /= MEMOP_TYPE_NONE and mem_op_shared /= MEMOP_TYPE_INVALID) and (exception_taken_0 = '0' and exception_taken_1 = '0')
+		else (others => '0');
+	dmem_data_out <= rs2_forwarded_shared;
+	dmem_write_req <= '1' when mem_op_shared = MEMOP_TYPE_STORE and (exception_taken_0 = '0' and exception_taken_1 = '0') else '0';
+	dmem_read_req <= '1' when memop_is_load(mem_op_shared) and (exception_taken_0 = '0' and exception_taken_1 = '0') else '0';
+	prev_alu_result <= alu_result_shared when ((stall = '0' and prev_stall = '0') or (stall='1' and prev_stall='0')) else prev_alu_result;
+
+	process(clk) 
+	begin
+		if rising_edge(clk) then
+			if reset = '1' or flush = '1' then
+				prev_stall <= '0';
+			else 
+				prev_stall <= stall;
 			end if;
-		end process;
+		end if;
+	end process;
 
 	pipeline_register: process(clk)
 	begin
 		if rising_edge(clk) then
-			if reset = '1' or flush = '1' then
+			if reset = '1' then 
 				rd_write_out_0 <= '0';
 				rd_write_out_1 <= '0';
 				branch_0 <= BRANCH_NONE;
 				branch_1 <= BRANCH_NONE;
 				csr_write_0 <= CSR_WRITE_NONE;
 				csr_write_1 <= CSR_WRITE_NONE;
-				mem_op <= MEMOP_TYPE_NONE;
+				mem_op_0 <= MEMOP_TYPE_NONE;
+				mem_op_1 <= MEMOP_TYPE_NONE;
 				decode_exception_0 <= '0';
 				decode_exception_1 <= '0';
 				count_instruction_out_0 <= '0';
 				count_instruction_csr_out_0 <= '0';
 				count_instruction_out_1 <= '0';
 				count_instruction_csr_out_1 <= '0';
-				exe_op_num_out_0 <= LENGTH_MAIN; 
-				exe_op_num_out_1 <= LENGTH_THREAD; 
+				op_num_out_0 <= LENGTH_MAIN; 
+				op_num_out_1 <= LENGTH_THREAD; 
 			elsif stall = '1' then
 				csr_write_0 <= CSR_WRITE_NONE;
 				csr_write_1 <= CSR_WRITE_NONE;
 			elsif stall = '0' then
+
+				-- Thread 0 output
+				if flush_0 = '0' then
+					rd_write_out_0 <= rd_write_in_0;
+					branch_0 <= branch_in_0;
+					csr_write_0 <= csr_write_in_0;
+					mem_op_0 <= mem_op_in_0;
+					decode_exception_0 <= decode_exception_in_0;
+					count_instruction_out_0 <= count_instruction_in_0;
+					count_instruction_csr_out_0 <= count_instruction_csr_in_0;
+					op_num_out_0 <= op_num_in_0;  
+				else
+					rd_write_out_0 <= '0';
+					branch_0 <= BRANCH_NONE;
+					csr_write_0 <= CSR_WRITE_NONE;
+					mem_op_0 <= MEMOP_TYPE_NONE;
+					decode_exception_0 <= '0';
+					count_instruction_out_0 <= '0';
+					count_instruction_csr_out_0 <= '0';
+					op_num_out_0 <= LENGTH_MAIN; 
+				end if;
+
+				-- Thread 1 output
+				if flush_1 = '0' then
+					rd_write_out_1 <= rd_write_in_1;
+					branch_1 <= branch_in_1;
+					csr_write_1 <= csr_write_in_1;
+					mem_op_1 <= mem_op_in_1;
+					decode_exception_1 <= decode_exception_in_1;
+					count_instruction_out_1 <= count_instruction_in_1;
+					count_instruction_csr_out_1 <= count_instruction_csr_in_1;
+					op_num_out_1 <= op_num_in_1;  
+				else
+					rd_write_out_1 <= '0';
+					branch_1 <= BRANCH_NONE;
+					csr_write_1 <= CSR_WRITE_NONE;
+					mem_op_1 <= MEMOP_TYPE_NONE;
+					decode_exception_1 <= '0';
+					count_instruction_out_1 <= '0';
+					count_instruction_csr_out_1 <= '0';
+					op_num_out_1 <= LENGTH_MAIN; 
+				end if;
+
 				pc_0 <= pc_in_0;
 				pc_1 <= pc_in_1;
-				count_instruction_out_0 <= count_instruction_in_0;
-				count_instruction_csr_out_0 <= count_instruction_csr_in_0;
-				count_instruction_out_1 <= count_instruction_in_1;
-				count_instruction_csr_out_1 <= count_instruction_csr_in_1;
 				
 				-- Register signals Thread 0:
-				rd_write_out_0 <= rd_write_in_0;
 				rd_addr_out_0 <= rd_addr_in_0;
 				rs1_addr_0 <= rs1_addr_in_0;
 				rs2_addr_0 <= rs2_addr_in_0;
 
 				-- Register signals Thread 1:
-				rd_write_out_1 <= rd_write_in_1;
 				rd_addr_out_1 <= rd_addr_in_1;
 				rs1_addr_1 <= rs1_addr_in_1;
 				rs2_addr_1 <= rs2_addr_in_1;
@@ -346,12 +398,8 @@ begin
 				alu_y_src_1 <= alu_y_src_in_1;
 
 				-- Control signals:
-				branch_0 <= branch_in_0;
-				branch_1 <= branch_in_1;
-				mem_op <= mem_op_in;
-				mem_size <= mem_size_in;
-				exe_op_num_out_0 <= rob_op_num_in_0;  
-				exe_op_num_out_1 <= rob_op_num_in_1;  
+				mem_size_0 <= mem_size_in_0;
+				mem_size_1 <= mem_size_in_1;
 
 				-- Constant values Thread 0:
 				immediate_0 <= immediate_in_0;
@@ -364,12 +412,10 @@ begin
 				funct3_1 <= funct3_in_1;
 
 				-- CSR signals Thread 0:
-				csr_write_0 <= csr_write_in_0;
 				csr_addr_0 <= csr_addr_in_0;
 				csr_use_immediate_0 <= csr_use_immediate_in_0;
 
 				-- CSR signals Thread 1:
-				csr_write_1 <= csr_write_in_1;
 				csr_addr_1 <= csr_addr_in_1;
 				csr_use_immediate_1 <= csr_use_immediate_in_1;
 
@@ -378,17 +424,15 @@ begin
 				mie <= mie_in;
 
 				-- Instruction decoder exceptions:
-				decode_exception_0 <= decode_exception_in_0;
 				decode_exception_cause_0 <= decode_exception_cause_in_0;
-				decode_exception_1 <= decode_exception_in_1;
 				decode_exception_cause_1 <= decode_exception_cause_in_1;
 			end if;
 		end if;
 	end process pipeline_register;
 
-	set_data_size: process(mem_size)
+	set_data_size: process(mem_size_shared)
 	begin
-		case mem_size is
+		case mem_size_shared is
 			when MEMOP_SIZE_BYTE =>
 				dmem_data_size <= b"01";
 			when MEMOP_SIZE_HALFWORD =>
@@ -414,10 +458,10 @@ begin
 	end process get_irq_num;
 
 	-- THIS PART SHOULD BE ADAPTED WHEN MEM OPERATIONS IMPLEMENTED
-	data_misalign_check: process(mem_size, alu_result_0, alu_result_1)
+	data_misalign_check: process(mem_size_0, mem_size_1, alu_result_0, alu_result_1)
 	begin
 		-- Thread 0
-		case mem_size is
+		case mem_size_0 is
 			when MEMOP_SIZE_HALFWORD =>
 				if alu_result_0(0) /= '0' then
 					data_misaligned_0 <= '1';
@@ -434,7 +478,7 @@ begin
 				data_misaligned_0 <= '0';
 		end case;
 		-- Thread 1
-		case mem_size is
+		case mem_size_1 is
 			when MEMOP_SIZE_HALFWORD =>
 				if alu_result_1(0) /= '0' then
 					data_misaligned_1 <= '1';
@@ -467,7 +511,7 @@ begin
 		end if;
 	end process instr_misalign_check;
 
-	find_exception_cause_0: process(decode_exception_0, decode_exception_cause_0, mem_op,
+	find_exception_cause_0: process(decode_exception_0, decode_exception_cause_0, mem_op_0,
 		data_misaligned_0, instr_misaligned_0, irq_asserted, irq_asserted_num, mie,
 		software_interrupt, timer_interrupt, ie_in)
 	begin
@@ -479,31 +523,31 @@ begin
 			exception_cause_0 <= CSR_CAUSE_TIMER_INT;
 		elsif decode_exception_0 = '1' then
 			exception_cause_0 <= decode_exception_cause_0;
-		elsif mem_op = MEMOP_TYPE_INVALID then
+		elsif mem_op_0 = MEMOP_TYPE_INVALID then
 			exception_cause_0 <= CSR_CAUSE_INVALID_INSTR;
 		elsif instr_misaligned_0 = '1' then
 			exception_cause_0 <= CSR_CAUSE_INSTR_MISALIGN;
-		elsif data_misaligned_0 = '1' and mem_op = MEMOP_TYPE_STORE then
+		elsif data_misaligned_0 = '1' and mem_op_0 = MEMOP_TYPE_STORE then
 			exception_cause_0 <= CSR_CAUSE_STORE_MISALIGN;
-		elsif data_misaligned_0 = '1' and memop_is_load(mem_op) then
+		elsif data_misaligned_0 = '1' and memop_is_load(mem_op_0) then
 			exception_cause_0 <= CSR_CAUSE_LOAD_MISALIGN;
 		else
 			exception_cause_0 <= CSR_CAUSE_NONE;
 		end if;
 	end process find_exception_cause_0;
 
-	find_exception_cause_1: process(decode_exception_1, decode_exception_cause_1, mem_op, 
+	find_exception_cause_1: process(decode_exception_1, decode_exception_cause_1, mem_op_1, 
                                     data_misaligned_1, instr_misaligned_1)
 	begin
 		if decode_exception_1 = '1' then
 			exception_cause_1 <= decode_exception_cause_1;
-		elsif mem_op = MEMOP_TYPE_INVALID then
+		elsif mem_op_1 = MEMOP_TYPE_INVALID then
 			exception_cause_1 <= CSR_CAUSE_INVALID_INSTR;
 		elsif instr_misaligned_1 = '1' then
 			exception_cause_1 <= CSR_CAUSE_INSTR_MISALIGN;
-		elsif data_misaligned_1 = '1' and mem_op = MEMOP_TYPE_STORE then
+		elsif data_misaligned_1 = '1' and mem_op_1 = MEMOP_TYPE_STORE then
 			exception_cause_1 <= CSR_CAUSE_STORE_MISALIGN;
-		elsif data_misaligned_1 = '1' and memop_is_load(mem_op) then
+		elsif data_misaligned_1 = '1' and memop_is_load(mem_op_1) then
 			exception_cause_1 <= CSR_CAUSE_LOAD_MISALIGN;
 		else
 			exception_cause_1 <= CSR_CAUSE_NONE;

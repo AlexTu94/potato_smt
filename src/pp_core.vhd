@@ -275,24 +275,30 @@ architecture behaviour of pp_core is
 
 begin
 
-	stall_id_0 <= rob_stall_fetch_decode_0;
+	------- Stalls and Flushes -------
 	stall_if_0 <= rob_stall_fetch_decode_0 or id_stall_csr_0;
-	stall_id_1 <= rob_stall_fetch_decode_1;
 	stall_if_1 <= rob_stall_fetch_decode_1 or id_stall_csr_1;
-	stall_ex <= stall_mem;
-	stall_mem <= to_std_logic(memop_is_load(mem_mem_op) and dmem_read_ack = '0')
-		or to_std_logic(mem_mem_op = MEMOP_TYPE_STORE and dmem_write_ack = '0');
-	stall_wb <= stall_mem;
+	stall_id_0 <= rob_stall_fetch_decode_0;
+	stall_id_1 <= rob_stall_fetch_decode_1;
 	stall_rob_0 <= stall_mem;
 	stall_rob_1 <= stall_mem;
-
+	stall_ex <= stall_mem;
+	stall_mem <= to_std_logic(memop_is_load(mem_mem_op_0) and dmem_read_ack = '0')
+		or to_std_logic(mem_mem_op_0 = MEMOP_TYPE_STORE and dmem_write_ack = '0')
+		or to_std_logic(memop_is_load(mem_mem_op_1) and dmem_read_ack = '0')
+		or to_std_logic(mem_mem_op_1 = MEMOP_TYPE_STORE and dmem_write_ack = '0');
+	stall_wb <= stall_mem;
+	
 	flush_if_0  <= (branch_taken_0 or exception_taken_0) and not stall_if_0;
-	flush_id_0  <= (branch_taken_0 or exception_taken_0) and not stall_id_0;
 	flush_if_1  <= (branch_taken_1 or exception_taken_1) and not stall_if_1;
+	flush_id_0  <= (branch_taken_0 or exception_taken_0) and not stall_id_0;
 	flush_id_1  <= (branch_taken_1 or exception_taken_1) and not stall_id_1;
-	flush_ex  <= (branch_taken_0 or exception_taken_0) and not stall_ex; -- Shared for now?
-	flush_mem <= (branch_taken_0 or exception_taken_0) and not stall_mem;
-	flush_wb  <= (branch_taken_0 or exception_taken_0) and not stall_wb;
+	flush_ex_0  <= (branch_taken_0 or exception_taken_0) and not stall_ex; 
+	flush_ex_1  <= (branch_taken_1 or exception_taken_1) and not stall_ex; 
+	flush_mem_0 <= (branch_taken_0 or exception_taken_0) and not stall_mem;
+	flush_mem_1 <= (branch_taken_1 or exception_taken_1) and not stall_mem;
+	flush_wb_0  <= (branch_taken_0 or exception_taken_0) and not stall_wb;
+	flush_wb_1  <= (branch_taken_1 or exception_taken_1) and not stall_wb;
 
 	------- Control and status module -------
 	csr_unit: entity work.pp_csr_unit
@@ -304,7 +310,8 @@ begin
 				clk 					=> clk,
 				reset 					=> reset,
 				irq 					=> irq,
-				count_instruction 		=> wb_count_instruction,
+				count_instruction_0		=> wb_count_instruction_0,
+				count_instruction_1		=> wb_count_instruction_1,
 				count_instruction_csr 	=> wb_count_instruction_csr,
 				test_context_out 		=> test_context_out,
 				read_address 			=> csr_read_address,
@@ -321,6 +328,10 @@ begin
 				software_interrupt_out 	=> software_interrupt,
 				timer_interrupt_out 	=> timer_interrupt
 			);
+	
+	wb_count_instruction_csr <= wb_count_instruction_csr_0 or wb_count_instruction_csr_1;
+	wb_exception_context <= wb_exception_context_0 when wb_count_instruction_csr_0 = '0' else wb_exception_context_1;
+	wb_exception <= wb_exception_0 when wb_count_instruction_csr_0 = '0' else wb_exception_1;
 	
 	csr_read_address <= csr_read_address_p when stall_ex = '1' else
                     id_csr_address_0   when id_count_instruction_csr_0 = '1' else
@@ -349,7 +360,7 @@ begin
 			branch 				=> branch_taken_0,
 			exception 			=> exception_taken_0,
 			branch_target 		=> branch_target_0,
-			evec 				=> exception_target_0,
+			evec 				=> exception_target,
 			instruction_data 	=> if_instruction_0,
 			instruction_address => if_pc_0,
 			instruction_ready 	=> if_instruction_ready_0
@@ -370,7 +381,7 @@ begin
 			branch 				=> branch_taken_1,
 			exception 			=> exception_taken_1,
 			branch_target 		=> branch_target_1,
-			evec 				=> exception_target_1,
+			evec 				=> exception_target,
 			instruction_data 	=> if_instruction_1,
 			instruction_address => if_pc_1,
 			instruction_ready 	=> if_instruction_ready_1
@@ -483,18 +494,17 @@ begin
 			rd_write => mux_rf_rd_write_1
 		);
 		
-	-- FIX THE WB_COUNTER_INSTRUCTION_CSR
 	mux_rf_rs1_addr_0 <= rob_alu_x_addr_0 when id_count_instruction_csr_0 = '0' else id_rs1_address_0;
 	mux_rf_rs2_addr_0 <= rob_alu_y_addr_0 when id_count_instruction_csr_0 = '0' else id_rs2_address_0;
-	mux_rf_rd_addr_0  <= rob_rd_addr_0    when wb_count_instruction_csr = '0'   else wb_rd_address;
-	mux_rf_rd_data_0  <= rob_result_0     when wb_count_instruction_csr = '0'   else wb_rd_data;
-	mux_rf_rd_write_0 <= rob_rd_write_0   when wb_count_instruction_csr = '0'   else wb_rd_write;	
+	mux_rf_rd_addr_0  <= rob_rd_addr_0    when wb_count_instruction_csr_0 = '0' else wb_rd_address_0;
+	mux_rf_rd_data_0  <= rob_result_0     when wb_count_instruction_csr_0 = '0' else wb_rd_data_0;
+	mux_rf_rd_write_0 <= rob_rd_write_0   when wb_count_instruction_csr_0 = '0' else wb_rd_write_0;	
 
 	mux_rf_rs1_addr_1 <= rob_alu_x_addr_1 when id_count_instruction_csr_1 = '0' else id_rs1_address_1;
 	mux_rf_rs2_addr_1 <= rob_alu_y_addr_1 when id_count_instruction_csr_1 = '0' else id_rs2_address_1;
-	mux_rf_rd_addr_1  <= rob_rd_addr_1    when wb_count_instruction_csr = '0'   else wb_rd_address;
-	mux_rf_rd_data_1  <= rob_result_1     when wb_count_instruction_csr = '0'   else wb_rd_data;
-	mux_rf_rd_write_1 <= rob_rd_write_1   when wb_count_instruction_csr = '0'   else wb_rd_write;	
+	mux_rf_rd_addr_1  <= rob_rd_addr_1    when wb_count_instruction_csr_1 = '0' else wb_rd_address_1;
+	mux_rf_rd_data_1  <= rob_result_1     when wb_count_instruction_csr_1 = '0' else wb_rd_data_1;
+	mux_rf_rd_write_1 <= rob_rd_write_1   when wb_count_instruction_csr_1 = '0' else wb_rd_write_1;	
 
 	------- Reorder Buffer (ROB) Stage -------
 
@@ -661,7 +671,8 @@ begin
 			clk 						=> clk,
 			reset 						=> reset,
 			stall 						=> stall_ex,
-			flush 						=> flush_ex,
+			flush_0						=> flush_ex_0,
+			flush_1						=> flush_ex_1,
 			-- Interrupt inputs
 			irq 						=> irq,
 			software_interrupt 			=> software_interrupt,
@@ -680,14 +691,17 @@ begin
 			rs2_data_in_0 				=> rf_rs2_data_0,
 			shamt_in_0 					=> rob_shamt_0,
 			immediate_in_0 				=> rob_immediate_0,
-			funct3_in_0 				=> rob_funct3_0,
 			pc_in_0 					=> rob_pc_0,
+			-- Thread 0 control signals:
+			funct3_in_0 				=> rob_funct3_0,
 			alu_op_in_0 				=> mux_exe_alu_op_0,
 			alu_x_src_in_0 				=> mux_exe_alu_x_src_0,
 			alu_y_src_in_0 				=> mux_exe_alu_y_src_0,
 			rd_write_in_0 				=> mux_exe_rd_write_0,
 			branch_in_0 				=> rob_branch_0,
-			rob_op_num_in_0				=> rob_num_0,
+			op_num_in_0					=> rob_num_0,
+			mem_op_in_0					=> rob_mem_op_0,
+			mem_size_in_0				=> rob_mem_size_0,
 			count_instruction_in_0 		=> to_exe_count_instruction_0,
 			count_instruction_csr_in_0 	=> id_count_instruction_csr_0,
 			-- CSR signals Thread 0
@@ -703,14 +717,17 @@ begin
 			rs2_data_in_1 				=> rf_rs2_data_1,
 			shamt_in_1 					=> rob_shamt_1,
 			immediate_in_1 				=> rob_immediate_1,
-			funct3_in_1 				=> rob_funct3_1,
 			pc_in_1 					=> rob_pc_1,
+			-- Thread 1 control signals:
+			funct3_in_1 				=> rob_funct3_1,
 			alu_op_in_1 				=> mux_exe_alu_op_1,
 			alu_x_src_in_1 				=> mux_exe_alu_x_src_1,
 			alu_y_src_in_1 				=> mux_exe_alu_y_src_1,
 			rd_write_in_1 				=> mux_exe_rd_write_1,
 			branch_in_1 				=> rob_branch_1,
-			rob_op_num_in_1				=> rob_num_1,
+			op_num_in_1					=> rob_num_1,
+			mem_op_in_1					=> rob_mem_op_1,
+			mem_size_in_1				=> rob_mem_size_1,
 			count_instruction_in_1 		=> to_exe_count_instruction_1,
 			count_instruction_csr_in_1 	=> id_count_instruction_csr_1,
 			-- CSR signals Thread 1
@@ -718,67 +735,67 @@ begin
 			csr_write_in_1 				=> id_csr_write_1,
 			csr_value_in_1 				=> csr_read_data,
 			csr_use_immediate_in_1 		=> id_csr_use_immediate_1,
-			-- Exception signals
+			-- Thread 0 Output
+			rd_addr_out_0 				=> ex_rd_address_0,
+			rd_data_out_0 				=> ex_rd_data_0,
+			pc_out_0 					=> ex_pc_0,
+			-- Thread 0 control signals outputs:
+			rd_write_out_0 				=> ex_rd_write_0,
+			branch_out_0		 		=> ex_branch_0,
+			op_num_out_0				=> ex_num_0,
+			count_instruction_out_0 	=> ex_count_instruction_0,
+			count_instruction_csr_out_0 => ex_count_instruction_csr_0,
+			jump_out_0 					=> ex_jump_taken_0,
+			jump_target_out_0 			=> ex_jump_target_0,
+			mem_op_out_0 				=> ex_mem_op_0,
+			mem_size_out_0 				=> ex_mem_size_0,
+			-- Thread 1 Outputs
+			rd_addr_out_1 				=> ex_rd_address_1,
+			rd_data_out_1 				=> ex_rd_data_1,
+			pc_out_1 					=> ex_pc_1,
+			-- Thread 1 control signals outputs:
+			rd_write_out_1 				=> ex_rd_write_1,
+			branch_out_1		 		=> ex_branch_1,
+			op_num_out_1				=> ex_num_1,
+			count_instruction_out_1 	=> ex_count_instruction_1,
+			count_instruction_csr_out_1 => ex_count_instruction_csr_1,
+			jump_out_1 					=> ex_jump_taken_1,
+			jump_target_out_1 			=> ex_jump_target_1,
+			mem_op_out_1 				=> ex_mem_op_1,
+			mem_size_out_1 				=> ex_mem_size_1,
+			-- CSR signals output
+			csr_addr_out 				=> ex_csr_addr,
+			csr_write_out 				=> ex_csr_write,
+			csr_value_out 				=> ex_csr_value,
+			-- Exception control registers
 			ie_in 						=> ie,
 			ie1_in 						=> ie1,
 			mie_in 						=> mie,
 			mtvec_in 					=> mtvec,
+			mtvec_out					=> exception_target, 
+			-- Exeception signals Thread 0
 			decode_exception_in_0 		=> id_exception_0,
-			decode_exception_cause_in_0 	=> id_exception_cause_0,
-			decode_exception_in_1 		=> id_exception_1,
-			decode_exception_cause_in_1 	=> id_exception_cause_1,
-			-- Thread 0 Output
-			rd_addr_out_0 				=> ex_rd_address_0,
-			rd_data_out_0 				=> ex_rd_data_0,
-			rd_write_out_0 				=> ex_rd_write_0,
-			pc_out_0 					=> ex_pc_0,
-			csr_addr_out_0 				=> ex_csr_address_0,
-			csr_write_out_0 			=> ex_csr_write_0,
-			csr_value_out_0 			=> ex_csr_data_0,
-			branch_out_0		 		=> ex_branch_0,
-			exe_op_num_out_0			=> ex_num_0,
-			count_instruction_out_0 	=> ex_count_instruction_0,
-			count_instruction_csr_out_0 => ex_count_instruction_csr_0,
-			mtvec_out_0 				=> exception_target_0,
+			decode_exception_cause_in_0 => id_exception_cause_0,
 			exception_out_0 			=> exception_taken_0,
 			exception_context_out_0 	=> ex_exception_context_0,
-			jump_out_0 					=> ex_jump_taken_0,
-			jump_target_out_0 			=> ex_jump_target_0,
-			-- Thread 1 Outputs
-			rd_addr_out_1 				=> ex_rd_address_1,
-			rd_data_out_1 				=> ex_rd_data_1,
-			rd_write_out_1 				=> ex_rd_write_1,
-			pc_out_1 					=> ex_pc_1,
-			csr_addr_out_1 				=> ex_csr_address_1,
-			csr_write_out_1 			=> ex_csr_write_1,
-			csr_value_out_1 			=> ex_csr_data_1,
-			branch_out_1		 		=> ex_branch_1,
-			exe_op_num_out_1			=> ex_num_1,
-			count_instruction_out_1 	=> ex_count_instruction_1,
-			count_instruction_csr_out_1 => ex_count_instruction_csr_1,
-			mtvec_out_1 				=> exception_target_1,
+			-- Exeception signals Thread 1
+			decode_exception_in_1 		=> id_exception_1,
+			decode_exception_cause_in_1 => id_exception_cause_1,
 			exception_out_1 			=> exception_taken_1,
 			exception_context_out_1 	=> ex_exception_context_1,
-			jump_out_1 					=> ex_jump_taken_1,
-			jump_target_out_1 			=> ex_jump_target_1,
 			-- Forwarding inputs for csr operations
-			mem_rd_write 				=> mem_rd_write_0,
 			mem_rd_addr 				=> mem_rd_address_0,
 			mem_rd_value 				=> mem_rd_data_0,
 			mem_csr_addr 				=> mem_csr_address_0,
 			mem_csr_data				=> mem_csr_data_0,
 			mem_csr_write 				=> mem_csr_write_0,
-			mem_exception 				=> mem_exception_0,
 			mem_count_instr_csr			=> mem_count_instruction_csr_0,
-			wb_rd_write 				=> wb_rd_write,
 			wb_rd_addr 					=> wb_rd_address,
 			wb_rd_value 				=> wb_rd_data,
 			wb_csr_addr 				=> wb_csr_address,
 			wb_csr_data 				=> wb_csr_data,
 			wb_csr_write 				=> wb_csr_write,
-			wb_exception 				=> wb_exception,
-			wb_count_instr_csr			=> wb_count_instruction_csr,
-			mem_mem_op 					=> mem_mem_op_0
+			wb_count_instr_csr			=> wb_count_instruction_csr
 		);
 
 	dmem_address 	<= dmem_address_p   when (stall_mem = '0' and stall_mem_p = '1') or stall_mem = '1' else ex_dmem_address;
@@ -818,116 +835,137 @@ begin
 			reset 					=> reset,
 			flush					=> flush_mem,
 			stall 					=> stall_mem,
+			-- Data memory inputs:
 			dmem_data_in 			=> dmem_data_in,
 			dmem_read_ack 			=> dmem_read_ack,
 			dmem_write_ack 			=> dmem_write_ack,
-
 			-- Thread 0 (Main)
-			pc_0 					=> ex_pc_0,
-			jump_taken_in_0			=> ex_jump_taken_0, 
-			jump_target_in_0		=> ex_jump_target_0,
-			jump_taken_out_0		=> mem_jump_taken_0, 
-			jump_target_out_0		=> mem_jump_target_0,
+			rd_addr_in_0 			=> ex_rd_address_0,
+			rd_addr_out_0 			=> mem_rd_address_0,
+			rd_data_in_0 			=> ex_rd_data_0,
+			rd_data_out_0 			=> mem_rd_data_0,
 			rd_write_in_0 			=> ex_rd_write_0,
 			rd_write_out_0 			=> mem_rd_write_0,
-			rd_data_in_0 				=> ex_rd_data_0,
-			rd_data_out_0 			=> mem_rd_data_0,
-			rd_addr_in_0 				=> ex_rd_address_0,
-			rd_addr_out_0 			=> mem_rd_address_0,
-			branch_0 					=> ex_branch_0,
-			mem_op_num_0 				=> ex_num_0,
-			wb_op_num_0 				=> mem_op_num_0,
-			mem_op_in_0 				=> ex_mem_op_0,
-			mem_op_out_0 				=> mem_mem_op_0,
-			mem_size_in_0 			=> ex_mem_size_0,
+			pc_0 					=> ex_pc_0,
+			branch_0 				=> ex_branch_0,
+			op_num_in_0 			=> ex_num_0,
+			op_num_out_0 			=> mem_op_num_0,
 			count_instr_in_0  		=> ex_count_instruction_0,
 			count_instr_out_0 		=> mem_count_instruction_0,
 			count_instr_csr_in_0  	=> ex_count_instruction_csr_0,
 			count_instr_csr_out_0 	=> mem_count_instruction_csr_0,
-			exception_in_0 			=> exception_taken_0,
-			exception_out_0 			=> mem_exception_0, 
-			exception_context_in_0 	=> ex_exception_context_0,
-			exception_context_out_0 	=> mem_exception_context_0,
-
-			-- CSR signals
-			csr_addr_in_0 			=> ex_csr_address_0,
-			csr_addr_out_0 			=> mem_csr_address_0,
-			csr_write_in_0 			=> ex_csr_write_0,
-			csr_write_out_0 			=> mem_csr_write_0,
-			csr_data_in_0 			=> ex_csr_data_0,
-			csr_data_out_0 			=> mem_csr_data_0,
-
+			jump_taken_in_0			=> ex_jump_taken_0, 
+			jump_target_in_0		=> ex_jump_target_0,
+			jump_taken_out_0		=> mem_jump_taken_0, 
+			jump_target_out_0		=> mem_jump_target_0,
+			mem_op_in_0 			=> ex_mem_op_0,
+			mem_op_out_0 			=> mem_mem_op_0,
+			mem_size_in_0 			=> ex_mem_size_0,
 			-- Thread 1
-			pc_1 					=> ex_pc_1,
-			jump_taken_in_1			=> ex_jump_taken_1, 
-			jump_target_in_1		=> ex_jump_target_1,
-			jump_taken_out_1		=> mem_jump_taken_1, 
-			jump_target_out_1		=> mem_jump_target_1,
+			rd_addr_in_1 			=> ex_rd_address_1,
+			rd_addr_out_1 			=> mem_rd_address_1,
+			rd_data_in_1 			=> ex_rd_data_1,
+			rd_data_out_1 			=> mem_rd_data_1,
 			rd_write_in_1 			=> ex_rd_write_1,
 			rd_write_out_1 			=> mem_rd_write_1,
-			rd_data_in_1 				=> ex_rd_data_1,
-			rd_data_out_1 			=> mem_rd_data_1,
-			rd_addr_in_1 				=> ex_rd_address_1,
-			rd_addr_out_1 			=> mem_rd_address_1,
-			branch_1 					=> ex_branch_1,
-			mem_op_num_1 				=> ex_num_1,
-			wb_op_num_1 				=> mem_op_num_1,
-			mem_op_in_1 				=> ex_mem_op_1,
-			mem_op_out_1 				=> mem_mem_op_1,
-			mem_size_in_1 			=> ex_mem_size_1,
+			pc_1 					=> ex_pc_1,
+			branch_1 				=> ex_branch_1,
+			op_num_in_1 			=> ex_num_1,
+			op_num_out_1 			=> mem_op_num_1,
 			count_instr_in_1  		=> ex_count_instruction_1,
 			count_instr_out_1 		=> mem_count_instruction_1,
 			count_instr_csr_in_1  	=> ex_count_instruction_csr_1,
 			count_instr_csr_out_1 	=> mem_count_instruction_csr_1,
+			jump_taken_in_1			=> ex_jump_taken_1, 
+			jump_target_in_1		=> ex_jump_target_1,
+			jump_taken_out_1		=> mem_jump_taken_1, 
+			jump_target_out_1		=> mem_jump_target_1,
+			mem_op_in_1 			=> ex_mem_op_1,
+			mem_op_out_1 			=> mem_mem_op_1,
+			mem_size_in_1 			=> ex_mem_size_1,
+			-- CSR signals
+			csr_addr_in				=> ex_csr_addr,
+			csr_addr_out 			=> mem_csr_addr,
+			csr_value_in 			=> ex_csr_value,
+			csr_value_out 			=> mem_csr_value,
+			csr_write_in 			=> ex_csr_write,
+			csr_write_out 			=> mem_csr_write,
+			-- Exception signals Thread 0
+			exception_in_0 			=> exception_taken_0,
+			exception_out_0 		=> mem_exception_0, 
+			exception_context_in_0 	=> ex_exception_context_0,
+			exception_context_out_0 => mem_exception_context_0,
+			-- Exception signals Thread 1
 			exception_in_1 			=> exception_taken_1,
-			exception_out_1 			=> mem_exception_1, 
+			exception_out_1 		=> mem_exception_1, 
 			exception_context_in_1 	=> ex_exception_context_1,
-			exception_context_out_1 	=> mem_exception_context_1,
-			csr_addr_in_1 			=> ex_csr_address_1,
-			csr_addr_out_1 			=> mem_csr_address_1,
-			csr_write_in_1 			=> ex_csr_write_1,
-			csr_write_out_1 			=> mem_csr_write_1,
-			csr_data_in_1 			=> ex_csr_data_1,
-			csr_data_out_1 			=> mem_csr_data_1
+			exception_context_out_1 => mem_exception_context_1
 		);
 
 	------- Writeback (WB) Stage -------
 	writeback: entity work.pp_writeback
 		generic map(
-	    	LENGTH_MAIN => MAIN_TABLE
+	    	LENGTH_MAIN => MAIN_TABLE,
+	    	LENGTH_THREAD => THREAD_TABLE
 		) port map (
 			clk 				=> clk,
 			reset	 			=> reset,
 			flush				=> flush_wb,
 			stall 				=> stall_wb,
-			count_instr_in 		=> mem_count_instruction,
-			count_instr_out 	=> wb_count_instruction,
-			count_instr_csr_in 	=> mem_count_instruction_csr,
-			count_instr_csr_out => wb_count_instruction_csr,
-			exception_ctx_in 	=> mem_exception_context,
-			exception_ctx_out 	=> wb_exception_context,
-			exception_in  		=> mem_exception,
-			exception_out 		=> wb_exception,
+			-- Data memory
+			dmem_addr_in		=> sg_dmem_address,
+			dmem_addr_out 		=> wb_dmem_address,
+			-- Thread 0
+			rd_addr_in_0   		=> mem_rd_address_0,
+			rd_addr_out_0  		=> wb_rd_address_0,
+			rd_write_in_0  		=> mem_rd_write_0,
+			rd_write_out_0 		=> wb_rd_write_0,
+			rd_data_in_0  		=> mem_rd_data_0,
+			rd_data_out_0 		=> wb_rd_data_0,
+			op_num_in_0   		=> mem_op_num_0,
+			op_num_out_0  		=> wb_num_0,
+			count_instr_in_0 	=> mem_count_instruction_0,
+			count_instr_out_0 	=> wb_count_instruction_0,
+			count_instr_csr_in_0  => mem_count_instruction_csr_0,
+			count_instr_csr_out_0 => wb_count_instruction_csr_0,
+			jump_taken_in_0		=> mem_jump_taken_0, 
+			jump_target_in_0	=> mem_jump_target_0,
+			jump_taken_out_0	=> wb_jump_taken_0, 
+			jump_target_out_0	=> wb_jump_target_0,
+			-- Thread 1
+			rd_addr_in_1   		=> mem_rd_address_1,
+			rd_addr_out_1  		=> wb_rd_address_1,
+			rd_write_in_1  		=> mem_rd_write_1,
+			rd_write_out_1 		=> wb_rd_write_1,
+			rd_data_in_1  		=> mem_rd_data_1,
+			rd_data_out_1 		=> wb_rd_data_1,
+			op_num_in_1   		=> mem_op_num_1,
+			op_num_out_1  		=> wb_num_1,
+			count_instr_in_1 	=> mem_count_instruction_1,
+			count_instr_out_1 	=> wb_count_instruction_1,
+			count_instr_csr_in_1  => mem_count_instruction_csr_1,
+			count_instr_csr_out_1 => wb_count_instruction_csr_1,
+			jump_taken_in_1		=> mem_jump_taken_1, 
+			jump_target_in_1	=> mem_jump_target_1,
+			jump_taken_out_1	=> wb_jump_taken_1, 
+			jump_target_out_1	=> wb_jump_target_1,
+			-- CSR instruction
 			csr_write_in  		=> mem_csr_write,
 			csr_write_out 		=> wb_csr_write,
 			csr_data_in  		=> mem_csr_data,
 			csr_data_out 		=> wb_csr_data,
 			csr_addr_in  		=> mem_csr_address,
 			csr_addr_out 		=> wb_csr_address,
-			rd_addr_in   		=> mem_rd_address,
-			rd_addr_out  		=> wb_rd_address,
-			rd_write_in  		=> mem_rd_write,
-			rd_write_out 		=> wb_rd_write,
-			rd_data_in  		=> mem_rd_data,
-			rd_data_out 		=> wb_rd_data,
-			op_num_in   		=> mem_op_num,
-			op_num_out  		=> wb_num,
-			jump_taken_in		=> mem_jump_taken, 
-			jump_target_in		=> mem_jump_target,
-			jump_taken_out		=> wb_jump_taken, 
-			jump_target_out		=> wb_jump_target,
-			dmem_addr_in		=> sg_dmem_address,
-			dmem_addr_out 		=> wb_dmem_address
+			-- Exception signals Thread 0
+			exception_in_0  		=> mem_exception_0,
+			exception_out_0 		=> wb_exception_0,
+			exception_context_in_0 	=> mem_exception_context_0,
+			exception_context_out_0 => wb_exception_context_0,
+			-- Exception signals Thread 1
+			exception_in_1  		=> mem_exception_1,
+			exception_out_1 		=> wb_exception_1,
+			exception_context_in_1 	=> mem_exception_context_1,
+			exception_context_out_1 => wb_exception_context_1
 		);
 
 end architecture behaviour;

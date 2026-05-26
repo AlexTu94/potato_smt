@@ -25,7 +25,8 @@ entity pp_csr_unit is
 		irq : in std_logic_vector(7 downto 0);
 
 		-- Count retired instruction:
-		count_instruction : in std_logic;
+		count_instruction_0 : in std_logic;
+		count_instruction_1 : in std_logic;
 		count_instruction_csr : in std_logic;
 
 		-- Test interface:
@@ -64,7 +65,8 @@ architecture behaviour of pp_csr_unit is
 	-- Counters:
 	signal counter_time    : std_logic_vector(63 downto 0);
 	signal counter_cycle   : std_logic_vector(63 downto 0);
-	signal counter_instret : std_logic_vector(63 downto 0);
+	signal counter_instret_0 : std_logic_vector(63 downto 0);
+	signal counter_instret_1 : std_logic_vector(63 downto 0);
 
 	-- Machine time counter:
 	signal mtime_clock_counter : natural := 0;
@@ -264,9 +266,9 @@ begin
 					when CSR_CYCLEH =>
 						read_data_out <= counter_cycle(63 downto 32);
 					when CSR_INSTRET =>
-						read_data_out <= counter_instret(31 downto 0);
+						read_data_out <= counter_instret_0(31 downto 0);
 					when CSR_INSTRETH =>
-						read_data_out <= counter_instret(63 downto 32);
+						read_data_out <= counter_instret_0(63 downto 32);
 
 					-- Potato extensions:
 					when CSR_TEST =>
@@ -296,12 +298,20 @@ begin
 			increment => '1'
 		);
 
-	instret_counter: entity work.pp_counter
+	instret_counter_0: entity work.pp_counter
 		port map(
 			clk => clk,
 			reset => reset,
-			count => counter_instret,
-			increment => count_instruction
+			count => counter_instret_0,
+			increment => count_instruction_0
 		);
+
+	instret_counter_1: entity work.pp_counter
+		port map(
+			clk => clk,
+			reset => reset,
+			count => counter_instret_1,
+			increment => count_instruction_1
+		);	
 
 end architecture behaviour;
