@@ -647,6 +647,10 @@ begin
 	mux_exe_alu_x_src_0   <= id_alu_x_src_0   when id_count_instruction_csr_0 = '1' else ALU_SRC_NULL 	 when arbiter_sel_0 = '1' else rob_alu_x_src_0;
 	mux_exe_alu_y_src_0   <= id_alu_y_src_0   when id_count_instruction_csr_0 = '1' else ALU_SRC_NULL 	 when arbiter_sel_0 = '1' else rob_alu_y_src_0;
 	mux_exe_rd_write_0    <= id_rd_write_0    when id_count_instruction_csr_0 = '1' else '0';
+	mux_exe_branch_0   	  <= id_branch_0   	  when id_count_instruction_csr_0 = '1' else BRANCH_NONE 	 when arbiter_sel_0 = '1' else rob_branch_0;
+	mux_exe_funct3_0   	  <= id_funct3_0   	  when id_count_instruction_csr_0 = '1' else (others => '0') when arbiter_sel_0 = '1' else rob_funct3_0;
+	mux_exe_mem_op_0   	  <= id_mem_op_0   	  when id_count_instruction_csr_0 = '1' else MEMOP_TYPE_NONE when arbiter_sel_0 = '1' else rob_mem_op_0;
+	mux_exe_op_num_0   	  <= MAIN_TABLE   	  when id_count_instruction_csr_0 = '1' else MAIN_TABLE 	 when arbiter_sel_0 = '1' else rob_num_0;
 	-- Thread 1
 	mux_exe_rs1_address_1 <= id_rs1_address_1 when id_count_instruction_csr_1 = '1' else (others => '0') when arbiter_sel_1 = '1' else rob_alu_x_addr_1;
 	mux_exe_rs2_address_1 <= id_rs2_address_1 when id_count_instruction_csr_1 = '1' else (others => '0') when arbiter_sel_1 = '1' else rob_alu_y_addr_1;
@@ -655,11 +659,13 @@ begin
 	mux_exe_alu_x_src_1   <= id_alu_x_src_1   when id_count_instruction_csr_1 = '1' else ALU_SRC_NULL 	 when arbiter_sel_1 = '1' else rob_alu_x_src_1;
 	mux_exe_alu_y_src_1   <= id_alu_y_src_1   when id_count_instruction_csr_1 = '1' else ALU_SRC_NULL 	 when arbiter_sel_1 = '1' else rob_alu_y_src_1;
 	mux_exe_rd_write_1 	  <= id_rd_write_1    when id_count_instruction_csr_1 = '1' else '0';
+	mux_exe_branch_1   	  <= id_branch_1   	  when id_count_instruction_csr_1 = '1' else BRANCH_NONE 	 when arbiter_sel_1 = '1' else rob_branch_1;
+	mux_exe_funct3_1   	  <= id_funct3_1   	  when id_count_instruction_csr_1 = '1' else (others => '0') when arbiter_sel_1 = '1' else rob_funct3_1;
+	mux_exe_mem_op_1   	  <= id_mem_op_1   	  when id_count_instruction_csr_1 = '1' else MEMOP_TYPE_NONE when arbiter_sel_1 = '1' else rob_mem_op_1;
+	mux_exe_op_num_1   	  <= MAIN_TABLE   	  when id_count_instruction_csr_1 = '1' else MAIN_TABLE 	 when arbiter_sel_1 = '1' else rob_num_1;
 
-	
 	to_exe_count_instruction_0 <= '1' when (rob_num_0 /= MAIN_TABLE and arbiter_sel_0 = '0') or id_count_instruction_csr_0 = '1' else '0';
 	to_exe_count_instruction_1 <= '1' when (rob_num_1 /= THREAD_TABLE and arbiter_sel_0 = '0') or id_count_instruction_csr_1 = '1' else '0';
-
 
 	------- Execute (EX) Stage -------
 
@@ -693,14 +699,14 @@ begin
 			immediate_in_0 				=> rob_immediate_0,
 			pc_in_0 					=> rob_pc_0,
 			-- Thread 0 control signals:
-			funct3_in_0 				=> rob_funct3_0,
+			funct3_in_0 				=> mux_exe_funct3_0,
 			alu_op_in_0 				=> mux_exe_alu_op_0,
 			alu_x_src_in_0 				=> mux_exe_alu_x_src_0,
 			alu_y_src_in_0 				=> mux_exe_alu_y_src_0,
 			rd_write_in_0 				=> mux_exe_rd_write_0,
-			branch_in_0 				=> rob_branch_0,
-			op_num_in_0					=> rob_num_0,
-			mem_op_in_0					=> rob_mem_op_0,
+			branch_in_0 				=> mux_exe_branch_0,
+			op_num_in_0					=> mux_exe_op_num_0, 
+			mem_op_in_0					=> mux_exe_mem_op_0, 
 			mem_size_in_0				=> rob_mem_size_0,
 			count_instruction_in_0 		=> to_exe_count_instruction_0,
 			count_instruction_csr_in_0 	=> id_count_instruction_csr_0,
@@ -719,14 +725,14 @@ begin
 			immediate_in_1 				=> rob_immediate_1,
 			pc_in_1 					=> rob_pc_1,
 			-- Thread 1 control signals:
-			funct3_in_1 				=> rob_funct3_1,
+			funct3_in_1 				=> mux_exe_funct3_1,
 			alu_op_in_1 				=> mux_exe_alu_op_1,
 			alu_x_src_in_1 				=> mux_exe_alu_x_src_1,
 			alu_y_src_in_1 				=> mux_exe_alu_y_src_1,
 			rd_write_in_1 				=> mux_exe_rd_write_1,
-			branch_in_1 				=> rob_branch_1,
-			op_num_in_1					=> rob_num_1,
-			mem_op_in_1					=> rob_mem_op_1,
+			branch_in_1 				=> mux_exe_branch_1,
+			op_num_in_1					=> mux_exe_op_num_1,
+			mem_op_in_1					=> mux_exe_mem_op_1,
 			mem_size_in_1				=> rob_mem_size_1,
 			count_instruction_in_1 		=> to_exe_count_instruction_1,
 			count_instruction_csr_in_1 	=> id_count_instruction_csr_1,
@@ -833,7 +839,8 @@ begin
 		) port map(
 			clk 					=> clk,
 			reset 					=> reset,
-			flush					=> flush_mem,
+			flush_0					=> flush_mem_0,
+			flush_1					=> flush_mem_1,
 			stall 					=> stall_mem,
 			-- Data memory inputs:
 			dmem_data_in 			=> dmem_data_in,

@@ -109,20 +109,18 @@ begin
 	pipeline_register: process(clk)
 	begin
 		if rising_edge(clk) then
-			if reset = '1' or flush = '1' then
+			if reset = '1' then
 				-- Thread 0
 				rd_write_out_0 <= '0';
-				csr_write_out_0 <= CSR_WRITE_NONE;
 				count_instr_out_0 <= '0';
 				count_instr_csr_out_0 <= '0';
 				mem_op_0 <= MEMOP_TYPE_NONE;
 				op_num_out_0 <= LENGTH_MAIN;
 				jump_taken_out_0 <= '0';
 				jump_target_out_0 <= (others => '0');
-
+				
 				-- Thread 1
 				rd_write_out_1 <= '0';
-				csr_write_out_1 <= CSR_WRITE_NONE;
 				count_instr_out_1 <= '0';
 				count_instr_csr_out_1 <= '0';
 				mem_op_1 <= MEMOP_TYPE_NONE;
@@ -130,22 +128,17 @@ begin
 				jump_taken_out_1 <= '0';
 				jump_target_out_1 <= (others => '0');
 				
+				csr_write_out <= CSR_WRITE_NONE;
 			elsif stall = '0' then
 				-- Thread 0
 				mem_size_0 <= mem_size_in_0;
 				rd_data_0 <= rd_data_in_0;
 				rd_addr_out_0 <= rd_addr_in_0;
-				op_num_out_0 <= op_num_in_0;
-				jump_taken_out_0 <= jump_taken_in_0;
-				jump_target_out_0 <= jump_target_in_0;
 
 				-- Thread 1
 				mem_size_1 <= mem_size_in_1;
 				rd_data_1 <= rd_data_in_1;
 				rd_addr_out_1 <= rd_addr_in_1;
-				op_num_out_1 <= op_num_in_1;
-				jump_taken_out_1 <= jump_taken_in_1;
-				jump_target_out_1 <= jump_target_in_1;
 
 				if exception_in_0 = '1' then
 					-- Exception for thread 0
@@ -176,15 +169,43 @@ begin
 					csr_addr_out <= CSR_MEPC;
 					csr_data_out <= pc_1;
 				else
-					-- Normal execution for both threads
-					mem_op_0 <= mem_op_in_0;
-					rd_write_out_0 <= rd_write_in_0;
-					count_instr_out_0 <= count_instr_in_0;
-					count_instr_csr_out_0 <= count_instr_csr_in_0;
-					mem_op_1 <= mem_op_in_1;
-					rd_write_out_1 <= rd_write_in_1;
-					count_instr_out_1 <= count_instr_in_1;
-					count_instr_csr_out_1 <= count_instr_csr_in_1;
+					-- Thread 0
+					if flush_0='0' then
+						rd_write_out_0 <= rd_write_in_0;
+						count_instr_out_0 <= count_instr_in_0;
+						count_instr_csr_out_0 <= count_instr_csr_in_0;
+						mem_op_0 <= mem_op_in_0;
+						op_num_out_0 <= op_num_in_0;
+						jump_taken_out_0 <= jump_taken_in_0;
+						jump_target_out_0 <= jump_target_in_0;
+					else
+						rd_write_out_0 <= '0';
+						count_instr_out_0 <= '0';
+						count_instr_csr_out_0 <= '0';
+						mem_op_0 <= MEMOP_TYPE_NONE;
+						op_num_out_0 <= LENGTH_MAIN;
+						jump_taken_out_0 <= '0';
+						jump_target_out_0 <= (others => '0');
+					end if;
+					-- Thread 1
+					if flush_1='0' then
+						rd_write_out_1 <= rd_write_in_1;
+						count_instr_out_1 <= count_instr_in_1;
+						count_instr_csr_out_1 <= count_instr_csr_in_1;
+						mem_op_1 <= mem_op_in_1;
+						op_num_out_1 <= op_num_in_1;
+						jump_taken_out_1 <= jump_taken_in_1;
+						jump_target_out_1 <= jump_target_in_1;
+					else
+						rd_write_out_1 <= '0';
+						count_instr_out_1 <= '0';
+						count_instr_csr_out_1 <= '0';
+						mem_op_1 <= MEMOP_TYPE_NONE;
+						op_num_out_1 <= LENGTH_THREAD;
+						jump_taken_out_1 <= '0';
+						jump_target_out_1 <= (others => '0');
+					end if;
+					-- CSR
 					csr_write_out <= csr_write_in;
 					csr_addr_out <= csr_addr_in;
 					csr_value_out <= csr_value_in;

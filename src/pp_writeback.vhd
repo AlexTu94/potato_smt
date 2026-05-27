@@ -15,10 +15,11 @@ entity pp_writeback is
 		LENGTH_THREAD : positive := 8
 	); 
 	port(
-		clk    : in std_logic;
-		reset  : in std_logic;
-		stall  : in std_logic;
-		flush  : in std_logic;
+		clk      : in std_logic;
+		reset    : in std_logic;
+		stall    : in std_logic;
+		flush_0  : in std_logic;
+		flush_1  : in std_logic;
 
 		-- Data memory
 		dmem_addr_in : in std_logic_vector(31 downto 0);
@@ -94,48 +95,66 @@ begin
 		if rising_edge(clk) then
 			if reset = '1' or flush = '1' then
 				rd_write_out_0 <= '0';
-				exception_out_0 <= '0';
 				count_instr_out_0 <= '0';
 				count_instr_csr_out_0 <= '0';
 				op_num_out_0 <= LENGTH_MAIN;
 				jump_taken_out_0 <= '0';
 				jump_target_out_0 <= (others => '0');
-
+				
 				rd_write_out_1 <= '0';
-				exception_out_1 <= '0';
 				count_instr_out_1 <= '0';
 				count_instr_csr_out_1 <= '0';
 				op_num_out_1 <= LENGTH_THREAD;
 				jump_taken_out_1 <= '0';
 				jump_target_out_1 <= (others => '0');
-
+				
+				exception_out_0 <= '0';
+				exception_out_1 <= '0';
 				dmem_addr_out <= (others => '0');
 			elsif stall = '0' then
 				-- Thread 0
-				op_num_out_0 <= op_num_in_0;
-				jump_taken_out_0 <= jump_taken_in_0;
-				jump_target_out_0 <= jump_target_in_0;
-				count_instr_out_0 <= count_instr_in_0;
-				count_instr_csr_out_0 <= count_instr_csr_in_0;
+				if flush_0='0' then
+					rd_write_out_0 <= rd_write_in_0;
+					count_instr_out_0 <= count_instr_in_0;
+					count_instr_csr_out_0 <= count_instr_csr_in_0;
+					op_num_out_0 <= op_num_in_0;
+					jump_taken_out_0 <= jump_taken_in_0;
+					jump_target_out_0 <= jump_target_in_0;
+					exception_out_0 <= exception_in_0;
+				else
+					rd_write_out_0 <= '0';
+					count_instr_out_0 <= '0';
+					count_instr_csr_out_0 <= '0';
+					op_num_out_0 <= LENGTH_MAIN;
+					jump_taken_out_0 <= '0';
+					jump_target_out_0 <= (others => '0');
+					exception_out_0 <= '0';
+				end if;
 				rd_data_out_0 <= rd_data_in_0;
-				rd_write_out_0 <= rd_write_in_0;
 				rd_addr_out_0 <= rd_addr_in_0;
-				exception_out_0 <= exception_in_0;
 				exception_context_out_0 <= exception_context_in_0;
-
 				-- Thread 1
-				op_num_out_1 <= op_num_in_1;
-				jump_taken_out_1 <= jump_taken_in_1;
-				jump_target_out_1 <= jump_target_in_1;
-				count_instr_out_1 <= count_instr_in_1;
-				count_instr_csr_out_1 <= count_instr_csr_in_1;
+				if flush_1='0' then
+					rd_write_out_1 <= rd_write_in_1;
+					count_instr_out_1 <= count_instr_in_1;
+					count_instr_csr_out_1 <= count_instr_csr_in_1;
+					op_num_out_1 <= op_num_in_1;
+					jump_taken_out_1 <= jump_taken_in_1;
+					jump_target_out_1 <= jump_target_in_1;
+					exception_out_1 <= exception_in_1;
+				else
+					rd_write_out_1 <= '0';
+					count_instr_out_1 <= '0';
+					count_instr_csr_out_1 <= '0';
+					op_num_out_1 <= LENGTH_THREAD;
+					jump_taken_out_1 <= '0';
+					jump_target_out_1 <= (others => '0');
+					exception_out_1 <= '0';
+				end if;
 				rd_data_out_1 <= rd_data_in_1;
-				rd_write_out_1 <= rd_write_in_1;
 				rd_addr_out_1 <= rd_addr_in_1;
-				exception_out_1 <= exception_in_1;
 				exception_context_out_1 <= exception_context_in_1;
-
-				-- Shared signals
+				-- CSR and MEM
 				csr_write_out <= csr_write_in;
 				csr_data_out <= csr_data_in;
 				csr_addr_out <= csr_addr_in;
