@@ -1,5 +1,6 @@
 .global _start      
 
+# Main execution
 .text               
 _start:
 
@@ -69,3 +70,31 @@ stop:
     csrw 0xbf0, 0b11
     
     j stop
+
+# Thread execution
+.section .text_1
+_start_text_1:
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop

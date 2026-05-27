@@ -299,7 +299,7 @@ begin
 	process(clk) 
 	begin
 		if rising_edge(clk) then
-			if reset = '1' or flush = '1' then
+			if reset = '1' or flush_0 = '1' or flush_1='1' then
 				prev_stall <= '0';
 			else 
 				prev_stall <= stall;

@@ -21,10 +21,7 @@ entity pp_memory is
 		stall   : in std_logic;
 		flush_0 : in std_logic;
 		flush_1 : in std_logic;
-
-		-- Interrupt inputs:
-		irq : in std_logic;
-
+		
 		-- Data memory inputs:
 		dmem_data_in   : in std_logic_vector(31 downto 0);
 		dmem_read_ack  : in std_logic;
@@ -103,8 +100,8 @@ begin
 
 	mem_op_out_0 <= mem_op_0;
 	mem_op_out_1 <= mem_op_1;
-	mem_size_out_0 <= mem_size_0;
-	mem_size_out_1 <= mem_size_1;
+	--mem_size_out_0 <= mem_size_0;
+	--mem_size_out_1 <= mem_size_1;
 
 	pipeline_register: process(clk)
 	begin
@@ -148,7 +145,7 @@ begin
 					count_instr_csr_out_0 <= '0';
 					csr_write_out <= CSR_WRITE_REPLACE;
 					csr_addr_out <= CSR_MEPC;
-					csr_data_out <= pc_0;
+					csr_value_out <= pc_0;
 					-- Normal execution for thread 1
 					mem_op_1 <= mem_op_in_1;
 					rd_write_out_1 <= rd_write_in_1;
@@ -167,7 +164,7 @@ begin
 					count_instr_csr_out_1 <= '0';
 					csr_write_out <= CSR_WRITE_REPLACE;
 					csr_addr_out <= CSR_MEPC;
-					csr_data_out <= pc_1;
+					csr_value_out <= pc_1;
 				else
 					-- Thread 0
 					if flush_0='0' then

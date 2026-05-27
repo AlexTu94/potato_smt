@@ -16,9 +16,9 @@ entity tb_processor is
 		IMEM_SIZE : natural := 4096; --! Size of the instruction memory in bytes.
 		DMEM_SIZE : natural := 4096; --! Size of the data memory in bytes.
 		RESET_ADDRESS   : std_logic_vector := x"00000100"; --! Processor reset address
-		IMEM_START_ADDR : std_logic_vector := x"00000100"; --! Instruction memory start address
-		IMEM0_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem0_testfile.hex";   --! File containing the contents of instruction memory.
-		IMEM1_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem1_testfile.hex";   --! File containing the contents of instruction memory.
+		IMEM0_START_ADDR : std_logic_vector := x"00000100"; --! Instruction memory start address
+		IMEM1_START_ADDR : std_logic_vector := x"00001100"; --! Instruction memory start address
+		IMEM_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem_testfile.hex";   --! File containing the contents of instruction memory.
 		DMEM_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/dmem_testfile.hex"    --! File containing the contents of data memory.
 	);
 end entity tb_processor;
@@ -63,14 +63,16 @@ architecture testbench of tb_processor is
 
 	-- Memory array type:
 	type memory_array is array(natural range <>) of std_logic_vector(7 downto 0);
-	constant IMEM_BASE : natural := 0;
-	constant IMEM_END  : natural := IMEM_BASE + IMEM_SIZE - 1;
-	constant DMEM_BASE : natural := IMEM_END + 1;
-	constant DMEM_END  : natural := IMEM_END + DMEM_SIZE;
+	constant IMEM0_BASE : natural := 0;
+	constant IMEM0_END  : natural := IMEM0_BASE + IMEM_SIZE - 1;
+	constant IMEM1_BASE : natural := IMEM0_END + 1;
+	constant IMEM1_END  : natural := IMEM1_BASE + IMEM_SIZE - 1;
+	constant DMEM_BASE : natural := IMEM1_END + 1;
+	constant DMEM_END  : natural := IMEM1_END + DMEM_SIZE;
 
 	-- Memories:
-	signal imem_memory_0 : memory_array(IMEM_BASE to IMEM_END);
-	signal imem_memory_1 : memory_array(IMEM_BASE to IMEM_END);
+	signal imem_memory_0 : memory_array(IMEM0_BASE to IMEM0_END);
+	signal imem_memory_1 : memory_array(IMEM1_BASE to IMEM1_END);
 	signal dmem_memory : memory_array(DMEM_BASE to DMEM_END);
 
 	signal simulation_finished : boolean := false;
@@ -117,17 +119,16 @@ begin
 
 	--! Initializes the instruction memory from file.
 	imem_init: process
-		file imem0_file : text open READ_MODE is IMEM0_FILENAME;
-		file imem1_file : text open READ_MODE is IMEM1_FILENAME;
+		file imem_file : text open READ_MODE is IMEM_FILENAME;
 		variable input_line  : line;
 		variable input_index : natural;
 		variable input_value : std_logic_vector(31 downto 0);
 	begin
 		-- Loading the instructions for Instruction Memory 0
-		for i in to_integer(unsigned(IMEM_START_ADDR)) / 4 to IMEM_END / 4 loop
+		for i in to_integer(unsigned(IMEM0_START_ADDR)) / 4 to IMEM0_END / 4 loop
 		--for i in IMEM_BASE / 4 to IMEM_END / 4 loop
-			if not endfile(imem0_file) then
-				readline(imem0_file, input_line);
+			if not endfile(imem_file) then
+				readline(imem_file, input_line);
 				hread(input_line, input_value);
 				imem_memory_0(i * 4 + 0) <= input_value( 7 downto  0);
 				imem_memory_0(i * 4 + 1) <= input_value(15 downto  8);
@@ -141,10 +142,10 @@ begin
 			end if;
 		end loop;
 		-- Loading the instructions for Instruction Memory 1
-		for i in to_integer(unsigned(IMEM_START_ADDR)) / 4 to IMEM_END / 4 loop
+		for i in to_integer(unsigned(IMEM1_START_ADDR)) / 4 to IMEM1_END / 4 loop
 		--for i in IMEM_BASE / 4 to IMEM_END / 4 loop
-			if not endfile(imem1_file) then
-				readline(imem1_file, input_line);
+			if not endfile(imem_file) then
+				readline(imem_file, input_line);
 				hread(input_line, input_value);
 				imem_memory_1(i * 4 + 0) <= input_value( 7 downto  0);
 				imem_memory_1(i * 4 + 1) <= input_value(15 downto  8);
@@ -222,7 +223,7 @@ begin
 			if reset = '1' then
 				imem_ack_0 <= '0';
 			else
-				if to_integer(unsigned(imem_address_0)) > IMEM_END then
+				if to_integer(unsigned(imem_address_0)) > IMEM0_END then
 					imem_data_in_0 <= (others => 'X');
 				else
 					imem_data_in_0 <= imem_memory_0(to_integer(unsigned(imem_address_0)) + 3)
@@ -243,7 +244,7 @@ begin
 			if reset = '1' then
 				imem_ack_1 <= '0';
 			else
-				if to_integer(unsigned(imem_address_1)) > IMEM_END then
+				if to_integer(unsigned(imem_address_1)) > IMEM1_END then
 					imem_data_in_1 <= (others => 'X');
 				else
 					imem_data_in_1 <= imem_memory_1(to_integer(unsigned(imem_address_1)) + 3)

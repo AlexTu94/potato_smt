@@ -75,8 +75,8 @@ SOC_GTKWAVE_SCRIPT := \
 
 .PHONY: all analyse_packages analyse_processor compile_test run_testbench run_test check_syntax clean
 
-#.DEFAULT_GOAL := run_testbench
-.DEFAULT_GOAL := run_soc_test
+.DEFAULT_GOAL := run_testbench
+#.DEFAULT_GOAL := run_soc_test
 
 analyse_packages: 
 	@echo "--- 1. Analyzing packages (VHDL-2008) ---"

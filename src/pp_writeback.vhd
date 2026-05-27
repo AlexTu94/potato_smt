@@ -93,7 +93,7 @@ begin
 	pipeline_register: process(clk)
 	begin
 		if rising_edge(clk) then
-			if reset = '1' or flush = '1' then
+			if reset = '1' then
 				rd_write_out_0 <= '0';
 				count_instr_out_0 <= '0';
 				count_instr_csr_out_0 <= '0';

@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 use work.pp_types.all;
 
 --! Arbiter needed to manage properly the execution of the ROBs. The managing is needed for the limited ALU's resources
-entity arbiter is
+entity pp_arbiter is
     generic(
 		NUM_INSTRUCTIONS_MAIN   : natural := 8; --! Number of instructions holded in the table
 		NUM_INSTRUCTIONS_THREAD : natural := 8 --! Number of instructions holded in the table
@@ -23,9 +23,9 @@ entity arbiter is
         selector_op_0      : out std_logic;
         selector_op_1      : out std_logic
 	);
-end entity arbiter;
+end entity pp_arbiter;
 
-architecture behaviour of arbiter is
+architecture behaviour of pp_arbiter is
 
 	-- Functional Unit classification
 	type functional_unit is (FU_NONE, FU_ARITH, FU_LOGIC, FU_SHIFT, FU_COMP);

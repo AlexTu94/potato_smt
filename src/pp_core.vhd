@@ -60,7 +60,7 @@ architecture behaviour of pp_core is
 
 	-- Flush signals:
 	signal flush_if_0, flush_id_0, flush_if_1, flush_id_1 : std_logic;
-	signal flush_ex, flush_mem, flush_wb : std_logic;
+	signal flush_ex_0, flush_ex_1, flush_mem_0, flush_mem_1, flush_wb_0, flush_wb_1 : std_logic;
 
 	-- Stall signals:
 	signal stall_if_0, stall_id_0, stall_if_1, stall_id_1 : std_logic;
@@ -69,12 +69,13 @@ architecture behaviour of pp_core is
 
 	-- Signals used to determine if an instruction should be counted by the instret counter:
 	signal if_count_instruction_0, id_count_instruction_0, if_count_instruction_1, id_count_instruction_1 : std_logic;
-	signal ex_count_instruction, mem_count_instruction : std_logic;
-	signal wb_count_instruction : std_logic;
+	signal ex_count_instruction_0, ex_count_instruction_1, mem_count_instruction_0, mem_count_instruction_1 : std_logic;
+	signal wb_count_instruction_0, wb_count_instruction_1 : std_logic;
 
 	-- Signals used to determine if an instruction is a CSR 
-	signal ex_count_instruction_csr, mem_count_instruction_csr : std_logic;
-	signal wb_count_instruction_csr : std_logic;
+	signal ex_count_instruction_csr_0, ex_count_instruction_csr_1 : std_logic;
+	signal mem_count_instruction_csr_0, mem_count_instruction_csr_1 : std_logic;
+	signal wb_count_instruction_csr, wb_count_instruction_csr_0, wb_count_instruction_csr_1 : std_logic;
 
 	-- CSR read port signals:
 	signal csr_read_data      : std_logic_vector(31 downto 0);
@@ -89,16 +90,11 @@ architecture behaviour of pp_core is
 	signal software_interrupt, timer_interrupt : std_logic;
 
 	-- Branch targets:
-	signal exception_target_0, branch_target_0, exception_target_1, branch_target_1 : std_logic_vector(31 downto 0);
-	signal branch_taken_0, exception_taken_0, branch_taken_1, exception_taken_1 : std_logic;
+	signal exception_target, branch_target_0, branch_target_1 : std_logic_vector(31 downto 0);
+	signal branch_taken_0, branch_taken_1, exception_taken_0, exception_taken_1 : std_logic;
 
 	-- Register file read ports:
 	signal rf_rs1_data_0, rf_rs2_data_0, rf_rs1_data_1, rf_rs2_data_1 : std_logic_vector(31 downto 0);
-
-	-- Register file write ports:
-	signal rd_addr	  : register_address;
-	signal rd_write   : std_logic;
-	signal rd_data    : std_logic_vector(31 downto 0);
 
 	-- Data memory signals:
 	signal sg_dmem_address  : std_logic_vector(31 downto 0);
@@ -209,7 +205,12 @@ architecture behaviour of pp_core is
 	signal mux_exe_alu_y_src_0, mux_exe_alu_y_src_1    : alu_operand_source;
 	signal mux_exe_rd_write_0, mux_exe_rd_write_1	    : std_logic;
 	signal mux_exe_rd_addr_0, mux_exe_rd_addr_1	    : register_address;
-	signal mux_exe_alu_op_0, mux_ex_alu_op_1	    : alu_operation;
+	signal mux_exe_alu_op_0, mux_exe_alu_op_1	    : alu_operation;
+	signal mux_exe_branch_0, mux_exe_branch_1         : branch_type;
+	signal mux_exe_funct3_0, mux_exe_funct3_1         : std_logic_vector(2 downto 0);
+	signal mux_exe_mem_op_0, mux_exe_mem_op_1         : memory_operation_type;
+	signal mux_exe_op_num_0                           : integer range 0 to MAIN_TABLE;
+	signal mux_exe_op_num_1                           : integer range 0 to THREAD_TABLE;
 
 	-- Execute stage signals:
 	signal ex_dmem_address   : std_logic_vector(31 downto 0);
@@ -222,13 +223,9 @@ architecture behaviour of pp_core is
 	signal ex_rd_data_0, ex_rd_data_1        : std_logic_vector(31 downto 0);
 	signal ex_rd_write_0, ex_rd_write_1       : std_logic;
 	signal ex_pc_0, ex_pc_1             : std_logic_vector(31 downto 0);
-	signal ex_csr_address_0, ex_csr_address_1    : csr_address;
-	signal ex_csr_write_0, ex_csr_write_1      : csr_write_mode;
-	signal ex_csr_data_0, ex_csr_data_1       : std_logic_vector(31 downto 0);
-	signal ex_csr_address_shared : csr_address;
-	signal ex_csr_write_shared   : csr_write_mode;
-	signal ex_csr_data_shared    : std_logic_vector(31 downto 0);
-	signal mtvec_out_shared      : std_logic_vector(31 downto 0);
+	signal ex_csr_addr 	: csr_address;
+	signal ex_csr_write : csr_write_mode;
+	signal ex_csr_value : std_logic_vector(31 downto 0);
 	signal ex_branch_0, ex_branch_1         : branch_type;
 	signal ex_mem_op_0, ex_mem_op_1         : memory_operation_type;
 	signal ex_mem_size_0, ex_mem_size_1       : memory_operation_size;
@@ -237,8 +234,6 @@ architecture behaviour of pp_core is
 	signal ex_jump_taken_0, ex_jump_taken_1	 : std_logic;
 	signal ex_jump_target_0, ex_jump_target_1  	 : std_logic_vector(31 downto 0);
 	signal ex_exception_context_0, ex_exception_context_1 	: csr_exception_context;
-	signal ex_count_instruction_0, ex_count_instruction_1 : std_logic;
-	signal ex_count_instruction_csr_0, ex_count_instruction_csr_1 : std_logic;
 	signal to_exe_count_instruction_0, to_exe_count_instruction_1 : std_logic;
 	
 
@@ -246,9 +241,9 @@ architecture behaviour of pp_core is
 	signal mem_rd_write_0, mem_rd_write_1    : std_logic;
 	signal mem_rd_address_0, mem_rd_address_1  : register_address;
 	signal mem_rd_data_0, mem_rd_data_1     : std_logic_vector(31 downto 0);
-	signal mem_csr_address_0, mem_csr_address_1 : csr_address;
-	signal mem_csr_write_0, mem_csr_write_1   : csr_write_mode;
-	signal mem_csr_data_0, mem_csr_data_1    : std_logic_vector(31 downto 0);
+	signal mem_csr_addr : csr_address;
+	signal mem_csr_write : csr_write_mode;
+	signal mem_csr_value : std_logic_vector(31 downto 0);
 	signal mem_mem_op_0, mem_mem_op_1      : memory_operation_type;
 	signal mem_op_num_0 	   : integer range 0 to MAIN_TABLE;
 	signal mem_op_num_1 	   : integer range 0 to THREAD_TABLE;
@@ -256,22 +251,23 @@ architecture behaviour of pp_core is
 	signal mem_jump_target_0, mem_jump_target_1 : std_logic_vector(31 downto 0);
 	signal mem_exception_0, mem_exception_1         : std_logic;
 	signal mem_exception_context_0, mem_exception_context_1 : csr_exception_context;
-	signal mem_count_instruction_0, mem_count_instruction_1 : std_logic;
-	signal mem_count_instruction_csr_0, mem_count_instruction_csr_1 : std_logic;
 
 	-- Writeback signals:
-	signal wb_rd_address  : register_address;
-	signal wb_rd_data     : std_logic_vector(31 downto 0);
-	signal wb_rd_write    : std_logic;
+	signal wb_rd_address_0, wb_rd_address_1 : register_address;
+	signal wb_rd_data_0, wb_rd_data_1       : std_logic_vector(31 downto 0);
+	signal wb_rd_write_0, wb_rd_write_1     : std_logic;
 	signal wb_csr_address : csr_address;
 	signal wb_csr_write   : csr_write_mode;
 	signal wb_csr_data    : std_logic_vector(31 downto 0);
+	signal wb_exception_0, wb_exception_1 : std_logic;
 	signal wb_exception         : std_logic;
+	signal wb_exception_context_0, wb_exception_context_1 : csr_exception_context;
 	signal wb_exception_context : csr_exception_context;
 	signal wb_dmem_address  : std_logic_vector(31 downto 0);
-	signal wb_num 			: integer range 0 to MAIN_TABLE;
-	signal wb_jump_taken 	: std_logic;
-	signal wb_jump_target	: std_logic_vector(31 downto 0);
+	signal wb_num_0 : integer range 0 to MAIN_TABLE;
+	signal wb_num_1 : integer range 0 to THREAD_TABLE;
+	signal wb_jump_taken_0, wb_jump_taken_1 : std_logic;
+	signal wb_jump_target_0, wb_jump_target_1 : std_logic_vector(31 downto 0);
 
 begin
 
@@ -545,11 +541,11 @@ begin
 			execution_branch 		=> rob_branch_0,
 			execution_funct3 		=> rob_funct3_0,
 			execution_valid        	=> arbiter_sel_0,
-			completed_count_instr 	=> wb_count_instruction,
-            completed_num  			=> wb_num,
-			completed_res			=> wb_rd_data,
-			completed_jump_taken 	=> wb_jump_taken,
-			completed_jump_target 	=> wb_jump_target,
+			completed_count_instr 	=> wb_count_instruction_0,
+            completed_num  			=> wb_num_0,
+			completed_res			=> wb_rd_data_0,
+			completed_jump_taken 	=> wb_jump_taken_0,
+			completed_jump_target 	=> wb_jump_target_0,
 			commit_rd_addr 			=> rob_rd_addr_0,
 			commit_rd_write 		=> rob_rd_write_0,
 			commit_res 				=> rob_result_0,
@@ -601,11 +597,11 @@ begin
 			execution_branch 		=> rob_branch_1,
 			execution_funct3 		=> rob_funct3_1,
 			execution_valid        	=> arbiter_sel_1,
-			completed_count_instr 	=> wb_count_instruction,
-            completed_num  			=> wb_num,
-			completed_res			=> wb_rd_data,
-			completed_jump_taken 	=> wb_jump_taken,
-			completed_jump_target 	=> wb_jump_target,
+			completed_count_instr 	=> wb_count_instruction_1,
+            completed_num  			=> wb_num_1,
+			completed_res			=> wb_rd_data_1,
+			completed_jump_taken 	=> wb_jump_taken_1,
+			completed_jump_target 	=> wb_jump_target_1,
 			commit_rd_addr 			=> rob_rd_addr_1,
 			commit_rd_write 		=> rob_rd_write_1,
 			commit_res 				=> rob_result_1,
@@ -792,17 +788,18 @@ begin
 			-- Forwarding inputs for csr operations
 			mem_rd_addr 				=> mem_rd_address_0,
 			mem_rd_value 				=> mem_rd_data_0,
-			mem_csr_addr 				=> mem_csr_address_0,
-			mem_csr_data				=> mem_csr_data_0,
-			mem_csr_write 				=> mem_csr_write_0,
+			mem_csr_addr 				=> mem_csr_addr,
+			mem_csr_data				=> mem_csr_value,
+			mem_csr_write 				=> mem_csr_write,
 			mem_count_instr_csr			=> mem_count_instruction_csr_0,
-			wb_rd_addr 					=> wb_rd_address,
-			wb_rd_value 				=> wb_rd_data,
+			wb_rd_addr 					=> wb_rd_address_0,
+			wb_rd_value 				=> wb_rd_data_0,
 			wb_csr_addr 				=> wb_csr_address,
 			wb_csr_data 				=> wb_csr_data,
 			wb_csr_write 				=> wb_csr_write,
 			wb_count_instr_csr			=> wb_count_instruction_csr
 		);
+
 
 	dmem_address 	<= dmem_address_p   when (stall_mem = '0' and stall_mem_p = '1') or stall_mem = '1' else ex_dmem_address;
 	sg_dmem_address <= dmem_address_p   when (stall_mem = '0' and stall_mem_p = '1') or stall_mem = '1' else ex_dmem_address;
@@ -917,7 +914,8 @@ begin
 		) port map (
 			clk 				=> clk,
 			reset	 			=> reset,
-			flush				=> flush_wb,
+			flush_0				=> flush_wb_0,
+			flush_1				=> flush_wb_1,
 			stall 				=> stall_wb,
 			-- Data memory
 			dmem_addr_in		=> sg_dmem_address,
@@ -959,10 +957,11 @@ begin
 			-- CSR instruction
 			csr_write_in  		=> mem_csr_write,
 			csr_write_out 		=> wb_csr_write,
-			csr_data_in  		=> mem_csr_data,
+			csr_data_in  		=> mem_csr_value,
 			csr_data_out 		=> wb_csr_data,
-			csr_addr_in  		=> mem_csr_address,
+			csr_addr_in  		=> mem_csr_addr,
 			csr_addr_out 		=> wb_csr_address,
+
 			-- Exception signals Thread 0
 			exception_in_0  		=> mem_exception_0,
 			exception_out_0 		=> wb_exception_0,

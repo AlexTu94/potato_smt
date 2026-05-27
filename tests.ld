@@ -14,13 +14,18 @@ ENTRY(_start);
 
 SECTIONS
 {
-	.text 0x100 :
+	.text_0 0x100 :
 	{
 		*(.text.init)
 		*(.text)
 	}
 
-	.data 0x1000 :
+	.text_1 0x1100 :
+	{
+		*(.text_1)
+	}
+
+	.data 0x2100 :
 	{
 		__data_begin = .;
 		*(.data*)
@@ -34,6 +39,6 @@ SECTIONS
 	}
 	__data_end = .;
 
-	__stack_top = 0x2000;
+	__stack_top = 0x3100;
 }
 
