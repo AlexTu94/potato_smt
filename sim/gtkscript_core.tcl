@@ -78,35 +78,59 @@ gtkwave::addSignalsFromList $sg_dec_out_1
 gtkwave::/Edit/Data_Format/Hex
 gtkwave::/Edit/UnHighlight_All
 
-
-
-gtkwave::addCommentTracesFromList "CSR_In"
-set sg_csr [list]
-lappend sg_csr "tb_processor.uut.csr_unit.count_instruction_0"
-lappend sg_csr "tb_processor.uut.csr_unit.count_instruction_1"
-lappend sg_csr "tb_processor.uut.csr_unit.count_instruction_csr"
-lappend sg_csr "tb_processor.uut.csr_unit.read_address"
-lappend sg_csr "tb_processor.uut.csr_unit.write_address"
-lappend sg_csr "tb_processor.uut.csr_unit.write_data_in"
-lappend sg_csr "tb_processor.uut.csr_unit.write_mode"
-lappend sg_csr "tb_processor.uut.csr_unit.exception_context"
-lappend sg_csr "tb_processor.uut.csr_unit.exception_context_write"
-gtkwave::addSignalsFromList $sg_csr
+gtkwave::addCommentTracesFromList "Reg_File_0"
+set sg_reg_file_0 [list]
+lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rd_write"
+lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rd_addr"
+lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rd_data"
+lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs1_addr"
+lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs1_data"
+lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs2_addr"
+lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs2_data"
+gtkwave::addSignalsFromList $sg_reg_file_0
+gtkwave::/Edit/Data_Format/Hex
 gtkwave::/Edit/UnHighlight_All
 
-
-gtkwave::addCommentTracesFromList "CSR_Out"
-set sg_csr [list]
-lappend sg_csr "tb_processor.uut.csr_unit.test_context_out"
-lappend sg_csr "tb_processor.uut.csr_unit.read_data_out"
-lappend sg_csr "tb_processor.uut.csr_unit.software_interrupt_out"
-lappend sg_csr "tb_processor.uut.csr_unit.timer_interrupt_out"
-lappend sg_csr "tb_processor.uut.csr_unit.mie_out"
-lappend sg_csr "tb_processor.uut.csr_unit.mtvec_out"
-lappend sg_csr "tb_processor.uut.csr_unit.ie_out"
-lappend sg_csr "tb_processor.uut.csr_unit.ie1_out"
-gtkwave::addSignalsFromList $sg_csr
+gtkwave::addCommentTracesFromList "Reg_File_1"
+set sg_reg_file_1 [list]
+lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rd_write"
+lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rd_addr"
+lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rd_data"
+lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs1_addr"
+lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs1_data"
+lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs2_addr"
+lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs2_data"
+gtkwave::addSignalsFromList $sg_reg_file_1
+gtkwave::/Edit/Data_Format/Hex
 gtkwave::/Edit/UnHighlight_All
+
+#gtkwave::addCommentTracesFromList "CSR_In"
+#set sg_csr [list]
+#lappend sg_csr "tb_processor.uut.csr_unit.count_instruction_0"
+#lappend sg_csr "tb_processor.uut.csr_unit.count_instruction_1"
+#lappend sg_csr "tb_processor.uut.csr_unit.count_instruction_csr"
+#lappend sg_csr "tb_processor.uut.csr_unit.read_address"
+#lappend sg_csr "tb_processor.uut.csr_unit.write_address"
+#lappend sg_csr "tb_processor.uut.csr_unit.write_data_in"
+#lappend sg_csr "tb_processor.uut.csr_unit.write_mode"
+#lappend sg_csr "tb_processor.uut.csr_unit.exception_context"
+#lappend sg_csr "tb_processor.uut.csr_unit.exception_context_write"
+#gtkwave::addSignalsFromList $sg_csr
+#gtkwave::/Edit/UnHighlight_All
+
+
+#gtkwave::addCommentTracesFromList "CSR_Out"
+#set sg_csr [list]
+#lappend sg_csr "tb_processor.uut.csr_unit.test_context_out"
+#lappend sg_csr "tb_processor.uut.csr_unit.read_data_out"
+#lappend sg_csr "tb_processor.uut.csr_unit.software_interrupt_out"
+#lappend sg_csr "tb_processor.uut.csr_unit.timer_interrupt_out"
+#lappend sg_csr "tb_processor.uut.csr_unit.mie_out"
+#lappend sg_csr "tb_processor.uut.csr_unit.mtvec_out"
+#lappend sg_csr "tb_processor.uut.csr_unit.ie_out"
+#lappend sg_csr "tb_processor.uut.csr_unit.ie1_out"
+#gtkwave::addSignalsFromList $sg_csr
+#gtkwave::/Edit/UnHighlight_All
 
 
 gtkwave::addCommentTracesFromList "ROB_0_Generic"
@@ -148,19 +172,67 @@ gtkwave::addSignalsFromList $sg_arbiter
 gtkwave::/Edit/Data_Format/Decimal
 gtkwave::/Edit/UnHighlight_All
 
+gtkwave::addCommentTracesFromList "Mux0_exe"
+set sg_mux0 [list]
+lappend sg_mux0 "tb_processor.uut.id_count_instruction_csr_0"
+lappend sg_mux0 "tb_processor.uut.arbiter_sel_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_rs1_address_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_rs2_address_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_rd_addr_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_alu_op_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_alu_x_src_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_alu_y_src_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_rd_write_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_branch_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_funct3_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_mem_op_0"
+lappend sg_mux0 "tb_processor.uut.mux_exe_op_num_0"
+gtkwave::addSignalsFromList $sg_mux0
+gtkwave::/Edit/Data_Format/Hex
+gtkwave::/Edit/UnHighlight_All
+
+gtkwave::addCommentTracesFromList "Mux1_exe"
+set sg_mux1 [list]
+lappend sg_mux1 "tb_processor.uut.id_count_instruction_csr_1"
+lappend sg_mux1 "tb_processor.uut.arbiter_sel_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_rs1_address_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_rs2_address_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_rd_addr_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_alu_op_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_alu_x_src_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_alu_y_src_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_rd_write_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_branch_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_funct3_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_mem_op_1"
+lappend sg_mux1 "tb_processor.uut.mux_exe_op_num_1"
+gtkwave::addSignalsFromList $sg_mux1
+gtkwave::/Edit/Data_Format/Hex
+gtkwave::/Edit/UnHighlight_All
+
 gtkwave::addCommentTracesFromList "Execute_In"
 set sg_execute [list]
 lappend sg_execute "tb_processor.uut.execute.stall"
 lappend sg_execute "tb_processor.uut.execute.flush_0"
 lappend sg_execute "tb_processor.uut.execute.flush_1"
 lappend sg_execute "tb_processor.uut.execute.op_num_in_0"
+lappend sg_execute "tb_processor.uut.execute.pc_in_0"
+lappend sg_execute "tb_processor.uut.execute.rs1_data_in_0"
+lappend sg_execute "tb_processor.uut.execute.rs2_data_in_0"
+lappend sg_execute "tb_processor.uut.execute.immediate_in_0"
 lappend sg_execute "tb_processor.uut.execute.alu_op_in_0"
+lappend sg_execute "tb_processor.uut.execute.mem_op_in_0"
 lappend sg_execute "tb_processor.uut.execute.rd_write_in_0"
 lappend sg_execute "tb_processor.uut.execute.op_num_in_1"
+lappend sg_execute "tb_processor.uut.execute.pc_in_1"
+lappend sg_execute "tb_processor.uut.execute.rs1_data_in_1"
+lappend sg_execute "tb_processor.uut.execute.rs2_data_in_1"
+lappend sg_execute "tb_processor.uut.execute.immediate_in_1"
 lappend sg_execute "tb_processor.uut.execute.alu_op_in_1"
+lappend sg_execute "tb_processor.uut.execute.mem_op_in_1"
 lappend sg_execute "tb_processor.uut.execute.rd_write_in_1"
 gtkwave::addSignalsFromList $sg_execute
-gtkwave::/Edit/Data_Format/Decimal
+gtkwave::/Edit/Data_Format/Hex
 gtkwave::/Edit/UnHighlight_All
 
 
@@ -199,60 +271,33 @@ gtkwave::/Edit/Data_Format/Hex
 gtkwave::/Edit/UnHighlight_All
 
 
-gtkwave::addCommentTracesFromList "Reg_File_0"
-set sg_reg_file_0 [list]
-lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rd_write"
-lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rd_addr"
-lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rd_data"
-lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs1_addr"
-lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs1_data"
-lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs2_addr"
-lappend sg_reg_file_0 "tb_processor.uut.regfile_0.rs2_data"
-gtkwave::addSignalsFromList $sg_reg_file_0
-gtkwave::/Edit/Data_Format/Hex
-gtkwave::/Edit/UnHighlight_All
 
-gtkwave::addCommentTracesFromList "Reg_File_1"
-set sg_reg_file_1 [list]
-lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rd_write"
-lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rd_addr"
-lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rd_data"
-lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs1_addr"
-lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs1_data"
-lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs2_addr"
-lappend sg_reg_file_1 "tb_processor.uut.regfile_1.rs2_data"
-gtkwave::addSignalsFromList $sg_reg_file_1
-gtkwave::/Edit/Data_Format/Hex
-gtkwave::/Edit/UnHighlight_All
+#gtkwave::addCommentTracesFromList "Execute_Shared"
+#set sg_execute_shared [list]
+#lappend sg_execute_shared "tb_processor.uut.execute.dmem_address"
+#lappend sg_execute_shared "tb_processor.uut.execute.dmem_data_out"
+#lappend sg_execute_shared "tb_processor.uut.execute.dmem_data_size"
+#lappend sg_execute_shared "tb_processor.uut.execute.dmem_read_req"
+#lappend sg_execute_shared "tb_processor.uut.execute.dmem_write_req"
+#lappend sg_execute_shared "tb_processor.uut.execute.csr_addr_out"
+#lappend sg_execute_shared "tb_processor.uut.execute.csr_write_out"
+#lappend sg_execute_shared "tb_processor.uut.execute.csr_value_out"
+#lappend sg_execute_shared "tb_processor.uut.execute.mtvec_out"
+#gtkwave::addSignalsFromList $sg_execute_shared
+#gtkwave::/Edit/UnHighlight_All
 
-
-
-gtkwave::addCommentTracesFromList "Execute_Shared"
-set sg_execute_shared [list]
-lappend sg_execute_shared "tb_processor.uut.execute.dmem_address"
-lappend sg_execute_shared "tb_processor.uut.execute.dmem_data_out"
-lappend sg_execute_shared "tb_processor.uut.execute.dmem_data_size"
-lappend sg_execute_shared "tb_processor.uut.execute.dmem_read_req"
-lappend sg_execute_shared "tb_processor.uut.execute.dmem_write_req"
-lappend sg_execute_shared "tb_processor.uut.execute.csr_addr_out"
-lappend sg_execute_shared "tb_processor.uut.execute.csr_write_out"
-lappend sg_execute_shared "tb_processor.uut.execute.csr_value_out"
-lappend sg_execute_shared "tb_processor.uut.execute.mtvec_out"
-gtkwave::addSignalsFromList $sg_execute_shared
-gtkwave::/Edit/UnHighlight_All
-
-gtkwave::addCommentTracesFromList "CSR_ALU"
-set sg_csr_alu_dec [list]
-lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.x"
-lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.y"
-lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.result"
-lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.immediate"
-lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.use_immediate"
-lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.write_mode"
-gtkwave::addSignalsFromList $sg_csr_alu_dec
-gtkwave::/Edit/Data_Format/Decimal
-gtkwave::highlightSignalsFromList $sg_csr_alu_dec
-gtkwave::/Edit/UnHighlight_All
+#gtkwave::addCommentTracesFromList "CSR_ALU"
+#set sg_csr_alu_dec [list]
+#lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.x"
+#lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.y"
+#lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.result"
+#lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.immediate"
+#lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.use_immediate"
+#lappend sg_csr_alu_dec "tb_processor.uut.execute.csr_alu_instance.write_mode"
+#gtkwave::addSignalsFromList $sg_csr_alu_dec
+#gtkwave::/Edit/Data_Format/Decimal
+#gtkwave::highlightSignalsFromList $sg_csr_alu_dec
+#gtkwave::/Edit/UnHighlight_All
 
 
 gtkwave::addCommentTracesFromList "Memory_In_0"
@@ -292,18 +337,18 @@ gtkwave::/Edit/Data_Format/Hex
 gtkwave::/Edit/UnHighlight_All
 
 
-gtkwave::addCommentTracesFromList "Memory_Ext"
-set sg_mem_ext [list]
-lappend sg_mem_ext "tb_processor.dmem_address"
-lappend sg_mem_ext "tb_processor.dmem_data_in"
-lappend sg_mem_ext "tb_processor.dmem_data_out"
-lappend sg_mem_ext "tb_processor.dmem_data_size"
-lappend sg_mem_ext "tb_processor.dmem_read_req"
-lappend sg_mem_ext "tb_processor.dmem_read_ack"
-lappend sg_mem_ext "tb_processor.dmem_write_req"
-lappend sg_mem_ext "tb_processor.dmem_write_ack"
-gtkwave::addSignalsFromList $sg_mem_ext
-gtkwave::/Edit/UnHighlight_All
+#gtkwave::addCommentTracesFromList "Memory_Ext"
+#set sg_mem_ext [list]
+#lappend sg_mem_ext "tb_processor.dmem_address"
+#lappend sg_mem_ext "tb_processor.dmem_data_in"
+#lappend sg_mem_ext "tb_processor.dmem_data_out"
+#lappend sg_mem_ext "tb_processor.dmem_data_size"
+#lappend sg_mem_ext "tb_processor.dmem_read_req"
+#lappend sg_mem_ext "tb_processor.dmem_read_ack"
+#lappend sg_mem_ext "tb_processor.dmem_write_req"
+#lappend sg_mem_ext "tb_processor.dmem_write_ack"
+#gtkwave::addSignalsFromList $sg_mem_ext
+#gtkwave::/Edit/UnHighlight_All
 
 gtkwave::addCommentTracesFromList "Memory_Out_0"
 set sg_mem_out_0 [list]

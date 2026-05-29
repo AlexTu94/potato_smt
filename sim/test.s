@@ -16,11 +16,11 @@ _start:
     sll x9, x2, x4
     srl x10, x1, x6
     
-    # Esempio: Configurazione di un contatore personalizzato
-    li x10, 100              # Carica il valore 100 in x11
-    csrw mscratch, x10       # SCRITTURA: scrive 100 nel registro mscratch
-    csrrwi x11, mscratch, 2
-    csrrw x12, mscratch, x11
+    ## Esempio: Configurazione di un contatore personalizzato
+    #li x10, 100              # Carica il valore 100 in x11
+    #csrw mscratch, x10       # SCRITTURA: scrive 100 nel registro mscratch
+    #csrrwi x11, mscratch, 2
+    #csrrw x12, mscratch, x11
 
     srli x2, x2, 12
     add x3, x1, x2 
@@ -74,6 +74,11 @@ stop:
 # Thread execution
 .section .text_1
 _start_text_1:
+#    add x2, x3, x4
+#    add x2, x3, x4
+#    add x2, x3, x4
+#    add x2, x3, x4
+#    add x2, x3, x4
     nop
     nop
     nop
@@ -95,6 +100,5 @@ _start_text_1:
     nop
     nop
     nop
-    nop
-    nop
-    nop
+stop1:
+    j stop1

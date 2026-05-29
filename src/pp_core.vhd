@@ -15,7 +15,8 @@ use work.pp_csr.all;
 entity pp_core is
 	generic(
 		PROCESSOR_ID           : std_logic_vector(31 downto 0) := x"00000000"; --! Processor ID.
-		RESET_ADDRESS          : std_logic_vector(31 downto 0) := x"00000000"; --! Address of the first instruction to execute.
+		RESET_ADDRESS0          : std_logic_vector(31 downto 0) := x"00000000"; --! Address of the first instruction to execute.
+		RESET_ADDRESS1          : std_logic_vector(31 downto 0) := x"00000000"; --! Address of the first instruction to execute.
 		MTIME_DIVIDER          : positive := 5;                                --! Divider for the clock driving the MTIME counter
 		TIME_DIVIDER           : positive := 5;                                --! Divider for the clock dirivng the TIME counter
 		MAIN_TABLE			   : positive := 8;								   --! Length of the ROB's Main Table
@@ -343,7 +344,7 @@ begin
 	------- Instruction Fetch (IF) Stage -------
 	fetch_0: entity work.pp_fetch
 		generic map(
-			RESET_ADDRESS => RESET_ADDRESS
+			RESET_ADDRESS => RESET_ADDRESS0
 		) port map(
 			clk 				=> clk,
 			reset 				=> reset,
@@ -364,7 +365,7 @@ begin
 
 	fetch_1: entity work.pp_fetch
 		generic map(
-			RESET_ADDRESS => RESET_ADDRESS
+			RESET_ADDRESS => RESET_ADDRESS1
 		) port map(
 			clk 				=> clk,
 			reset 				=> reset,
@@ -389,7 +390,7 @@ begin
 	------- Instruction Decode (ID) Stage -------
 	decode_0: entity work.pp_decode
 		generic map(
-			RESET_ADDRESS => RESET_ADDRESS,
+			RESET_ADDRESS => RESET_ADDRESS0,
 			PROCESSOR_ID  => PROCESSOR_ID
 		) port map(
 			clk 					=> clk,
@@ -428,7 +429,7 @@ begin
 
 	decode_1: entity work.pp_decode
 		generic map(
-			RESET_ADDRESS => RESET_ADDRESS,
+			RESET_ADDRESS => RESET_ADDRESS1,
 			PROCESSOR_ID  => PROCESSOR_ID
 		) port map(
 			clk 					  => clk,

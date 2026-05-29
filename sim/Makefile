@@ -6,7 +6,8 @@ LD_FILE = \
 	../tests.ld
 
 SIM_GENERICS = \
-    -gIMEM_FILENAME="imem_testfile.hex" \
+    -gIMEM0_FILENAME="imem0_testfile.hex" \
+    -gIMEM1_FILENAME="imem1_testfile.hex" \
     -gDMEM_FILENAME="dmem_testfile.hex"
 
 SIM_TEST = \
@@ -106,8 +107,8 @@ compile_test: analyse_processor
 	@echo "--- 3. Assembly compiling ---"
 	@$(TOOLCHAIN_PREFIX)-gcc -c $(TARGET_CFLAGS) -DPOTATO_TEST_ASSEMBLY -Iriscv-tests -o test.o test.s 
 	@$(TOOLCHAIN_PREFIX)-ld $(TARGET_LDFLAGS) -T $(LD_FILE) test.o -o test.elf
-	@touch imem_testfile.hex dmem_testfile.hex
-	@../scripts/extract_hex.sh test.elf imem_testfile.hex dmem_testfile.hex 
+	@touch imem0_testfile.hex imem1_testfile.hex dmem_testfile.hex
+	@../scripts/extract_hex.sh test.elf imem0_testfile.hex imem1_testfile.hex 
 
 run_testbench: compile_test
 	@echo "--- 4. Analyzing Testbench ---"

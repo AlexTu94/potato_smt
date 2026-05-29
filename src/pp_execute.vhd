@@ -648,6 +648,34 @@ begin
 			output => alu_y_1
 		);
 
+	branch0_comparator: entity work.pp_comparator
+	port map(
+		funct3 => funct3_0,
+		rs1 => rs1_forwarded_0,
+		rs2 => rs2_forwarded_0,
+		result => branch_condition_0
+	);
+
+	branch1_comparator: entity work.pp_comparator
+	port map(
+		funct3 => funct3_1,
+		rs1 => rs1_forwarded_1,
+		rs2 => rs2_forwarded_1,
+		result => branch_condition_1
+	);
+
+	alu_instance: entity work.pp_alu
+		port map(
+			result_0 	=> alu_result_0,
+			x_0 	 	=> alu_x_0,
+			y_0 	 	=> alu_y_0,
+			operation_0 => alu_op_0,
+			result_1 	=> alu_result_1,
+			x_1 		=> alu_x_1,
+			y_1 		=> alu_y_1,
+			operation_1 => alu_op_1
+		);
+
 	rs1_csr_forward_0: process(csr_write_0, rs1_addr_0, rs1_data_0, 
 		mem_csr_write, mem_rd_addr, mem_count_instr_csr, mem_rd_value,
 		wb_csr_write, wb_rd_addr, wb_count_instr_csr, wb_rd_value)

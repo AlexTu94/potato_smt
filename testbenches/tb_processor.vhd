@@ -15,10 +15,12 @@ entity tb_processor is
 	generic(
 		IMEM_SIZE : natural := 4096; --! Size of the instruction memory in bytes.
 		DMEM_SIZE : natural := 4096; --! Size of the data memory in bytes.
-		RESET_ADDRESS   : std_logic_vector := x"00000100"; --! Processor reset address
+		RESET_ADDRESS0   : std_logic_vector := x"00000100"; --! Processor reset address
+		RESET_ADDRESS1   : std_logic_vector := x"00001100"; --! Processor reset address
 		IMEM0_START_ADDR : std_logic_vector := x"00000100"; --! Instruction memory start address
 		IMEM1_START_ADDR : std_logic_vector := x"00001100"; --! Instruction memory start address
-		IMEM_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem_testfile.hex";   --! File containing the contents of instruction memory.
+		IMEM0_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem0_testfile.hex";   --! File containing the contents of instruction memory.
+		IMEM1_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/imem1_testfile.hex";   --! File containing the contents of instruction memory.
 		DMEM_FILENAME   : string := "/home/rick/Desktop/potato_impl/sim/dmem_testfile.hex"    --! File containing the contents of data memory.
 	);
 end entity tb_processor;
@@ -59,7 +61,7 @@ architecture testbench of tb_processor is
 	signal irq : std_logic_vector(7 downto 0) := (others => '0');
 
 	-- Simulation initialized:
-	signal imem_initialized, dmem_initialized, initialized : boolean := false;
+	signal imem0_initialized, imem1_initialized, dmem_initialized, initialized : boolean := false;
 
 	-- Memory array type:
 	type memory_array is array(natural range <>) of std_logic_vector(7 downto 0);
@@ -81,7 +83,8 @@ begin
 
 	uut: entity work.pp_core
 		generic map(
-			RESET_ADDRESS => RESET_ADDRESS
+			RESET_ADDRESS0 => RESET_ADDRESS0,
+			RESET_ADDRESS1 => RESET_ADDRESS1
 		) port map(
 			clk => clk,
 			reset => reset,
@@ -117,18 +120,17 @@ begin
 		end if;
 	end process clock;
 
-	--! Initializes the instruction memory from file.
-	imem_init: process
-		file imem_file : text open READ_MODE is IMEM_FILENAME;
+	--! Initializes the instruction memory 0 from file.
+	imem0_init: process
+		file imem0_file : text open READ_MODE is IMEM0_FILENAME;
 		variable input_line  : line;
 		variable input_index : natural;
 		variable input_value : std_logic_vector(31 downto 0);
 	begin
-		-- Loading the instructions for Instruction Memory 0
 		for i in to_integer(unsigned(IMEM0_START_ADDR)) / 4 to IMEM0_END / 4 loop
 		--for i in IMEM_BASE / 4 to IMEM_END / 4 loop
-			if not endfile(imem_file) then
-				readline(imem_file, input_line);
+			if not endfile(imem0_file) then
+				readline(imem0_file, input_line);
 				hread(input_line, input_value);
 				imem_memory_0(i * 4 + 0) <= input_value( 7 downto  0);
 				imem_memory_0(i * 4 + 1) <= input_value(15 downto  8);
@@ -141,11 +143,22 @@ begin
 				imem_memory_0(i * 4 + 3) <= RISCV_NOP(31 downto 24);
 			end if;
 		end loop;
-		-- Loading the instructions for Instruction Memory 1
+
+		imem0_initialized <= true;
+		wait;
+	end process imem0_init;
+
+	--! Initializes the instruction memory 1 from file.
+	imem1_init: process
+		file imem1_file : text open READ_MODE is IMEM1_FILENAME;
+		variable input_line  : line;
+		variable input_index : natural;
+		variable input_value : std_logic_vector(31 downto 0);
+	begin
 		for i in to_integer(unsigned(IMEM1_START_ADDR)) / 4 to IMEM1_END / 4 loop
 		--for i in IMEM_BASE / 4 to IMEM_END / 4 loop
-			if not endfile(imem_file) then
-				readline(imem_file, input_line);
+			if not endfile(imem1_file) then
+				readline(imem1_file, input_line);
 				hread(input_line, input_value);
 				imem_memory_1(i * 4 + 0) <= input_value( 7 downto  0);
 				imem_memory_1(i * 4 + 1) <= input_value(15 downto  8);
@@ -159,9 +172,9 @@ begin
 			end if;
 		end loop;
 
-		imem_initialized <= true;
+		imem1_initialized <= true;
 		wait;
-	end process imem_init;
+	end process imem1_init;
 
 	--! Initializes and handles writes to the data memory.
 	dmem_init_and_write: process(clk)
@@ -214,7 +227,7 @@ begin
 		end if;
 	end process dmem_init_and_write;
 
-	initialized <= imem_initialized and dmem_initialized;
+	initialized <= imem0_initialized and imem1_initialized and dmem_initialized;
 
 	--! Instruction memory 0 read process.
 	imem0_read: process(clk)
@@ -244,7 +257,7 @@ begin
 			if reset = '1' then
 				imem_ack_1 <= '0';
 			else
-				if to_integer(unsigned(imem_address_1)) > IMEM1_END then
+				if to_integer(unsigned(imem_address_1)) > IMEM1_END or to_integer(unsigned(imem_address_1)) < IMEM1_BASE then
 					imem_data_in_1 <= (others => 'X');
 				else
 					imem_data_in_1 <= imem_memory_1(to_integer(unsigned(imem_address_1)) + 3)
